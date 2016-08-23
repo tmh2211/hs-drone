@@ -45,6 +45,8 @@ data AtCommand = AtRef String
                         , gaz :: Float
                         , yaw :: Float }
                | AtConfig String String
+               | AtCtrl Int Int
+               | AtConfig String String
                deriving (Show)
 
 type SequenceNumber = Int
@@ -119,8 +121,10 @@ fromAtCommand cmd num = (++ "\r") $
          in "AT*PCMD=" ++ show num ++ "," ++
             enableNum ++ "," ++ suffix
 
-     AtFTrim ->
-         "AT*FTRIM=" ++ show num
+     AtFTrim -> "AT*FTRIM=" ++ show num
+     AtCtrl a b -> "AT*CTRL=" ++ show num ++ ","++ show a ++","++show b
+     AtConfig a b -> "AT*CONFIG="++ show num ++ ",\""++ a++ "\",\"" ++ b ++ "\""
+
 
 floatToInt :: Float -> Int32
 floatToInt = fromIntegral . floatToWord
