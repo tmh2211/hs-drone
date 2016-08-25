@@ -33,6 +33,14 @@ land :: Drone ()
 land = do
   cmd $ toAtCommand Land
 
+stop :: Drone ()
+stop = do
+  cmd $ toAtCommand Stop
+
+disableEmergency :: Drone ()
+disableEmergency = do
+  cmd $ toAtCommand DisableEmergency
+
 flyForward :: Float -> Drone ()
 flyForward v = do
   cmd $ toAtCommand $ Front v
@@ -40,6 +48,30 @@ flyForward v = do
 flyBackwards :: Float -> Drone ()
 flyBackwards v = do
   cmd $ toAtCommand $ Back v
+
+flyLeft :: Float -> Drone ()
+flyLeft v = do
+  cmd $ toAtCommand $ MoveLeft v
+
+flyRight :: Float -> Drone ()
+flyRight v = do
+  cmd $ toAtCommand $ MoveRight v
+
+flyUp :: Float -> Drone ()
+flyUp v = do
+  cmd $ toAtCommand $ Up v
+
+flyDown :: Float -> Drone ()
+flyDown v = do
+  cmd $ toAtCommand $ Down v
+
+rotateClockwise :: Float -> Drone ()
+rotateClockwise v = do
+  cmd $ toAtCommand $ Clockwise v
+
+rotateCounterClockwise :: Float -> Drone ()
+rotateCounterClockwise v = do
+  cmd $ toAtCommand $ CounterClockwise v
 
 initNavaData :: Drone ()
 initNavaData = do
