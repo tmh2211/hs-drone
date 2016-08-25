@@ -1,5 +1,5 @@
 import Control.Monad.Drone
-import Robotics.ArDrone.Control hiding (runDrone, main)
+import Robotics.ArDrone.Control
 import Control.Monad.Trans
 
 main :: IO ()
