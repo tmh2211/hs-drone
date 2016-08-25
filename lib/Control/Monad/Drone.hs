@@ -25,6 +25,22 @@ data DroneState = DroneState { seqNr :: Integer
 
 type Drone a = StateT DroneState IO a
 
+takeOff :: Drone ()
+takeOff = do
+  cmd $ toAtCommand TakeOff
+
+land :: Drone ()
+land = do
+  cmd $ toAtCommand Land
+
+flyForward :: Float -> Drone ()
+flyForward v = do
+  cmd $ toAtCommand $ Front v
+
+flyBackwards :: Float -> Drone ()
+flyBackwards v = do
+  cmd $ toAtCommand $ Back v
+
 initNavaData :: Drone ()
 initNavaData = do
   cmd $ AtCtrl 5 0
@@ -42,14 +58,6 @@ initNavaData = do
   cmd $ AtCtrl 5 0
   cmd $ AtRef "0"
   cmd $ AtPCmd False 0.0 0.0 0.0 0.0
-
-takeOff :: Drone ()
-takeOff = do
-  cmd $ toAtCommand TakeOff
-
-land :: Drone ()
-land = do
-  cmd $ toAtCommand Land
 
 inc :: Drone ()
 inc = do
