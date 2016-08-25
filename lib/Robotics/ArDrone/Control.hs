@@ -1,6 +1,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 
-module Robotics.ArDrone.Control where
+module Robotics.ArDrone.Control
+where
 
 import Network.Socket
 import Control.Concurrent
@@ -46,7 +47,6 @@ data AtCommand = AtRef String
                         , yaw :: Float }
                | AtConfig String String
                | AtCtrl Int Int
-               | AtConfig String String
                deriving (Show)
 
 type SequenceNumber = Int

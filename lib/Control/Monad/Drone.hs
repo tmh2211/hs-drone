@@ -6,7 +6,8 @@ import Control.Concurrent
 import Network.Socket
 import Data.Binary.Get
 import qualified Network.Socket.ByteString as NBS
-
+import qualified Data.ByteString as BS
+import Data.Word
 
 import Robotics.ArDrone.Control
 import Robotics.ArDrone.NavDataParser
@@ -14,6 +15,8 @@ import Robotics.ArDrone.NavDataParser
 droneIp="192.168.1.1"
 navPort=5554
 ctrlPort=5556
+byte = BS.singleton ( 1 :: Word8)
+
 
 data DroneState = DroneState { seqNr :: Integer
                              , lastCommand :: AtCommand
@@ -21,6 +24,24 @@ data DroneState = DroneState { seqNr :: Integer
                              , navDataSocket :: Socket }
 
 type Drone a = StateT DroneState IO a
+
+initNavaData :: Drone ()
+initNavaData = do
+  cmd $ AtCtrl 5 0
+  cmd $ AtRef "0"
+  cmd $ AtPCmd False 0.0 0.0 0.0 0.0
+  cmd $ AtConfig "general:navdata_demo" "TRUE"
+  cmd $ AtCtrl 5 0
+  cmd $ AtRef "0"
+  cmd $ AtPCmd False 0.0 0.0 0.0 0.0
+  cmd $ AtRef "0"
+  cmd $ AtPCmd False 0.0 0.0 0.0 0.0
+  cmd $ AtConfig "general:navdata_options" "8"
+  cmd $ AtRef "0"
+  cmd $ AtPCmd False 0.0 0.0 0.0 0.0
+  cmd $ AtCtrl 5 0
+  cmd $ AtRef "0"
+  cmd $ AtPCmd False 0.0 0.0 0.0 0.0
 
 inc :: Drone ()
 inc = do
@@ -52,7 +73,6 @@ wait t
     wait ( t - 0.1 )
   | otherwise = return ()
 
-
 runDrone :: Drone a -> IO a
 runDrone d = do
   ctrlInfo <- getAddrInfo Nothing (Just droneIp) (Just $ show ctrlPort)
@@ -64,5 +84,7 @@ runDrone d = do
   let navAddr = head navInfo
   navSocket <- socket (addrFamily navAddr) Datagram defaultProtocol
   connect navSocket (addrAddress navAddr)
+
+  NBS.send navSocket byte
 
   evalStateT d (DroneState 0 (AtCtrl 5 0) ctrlSocket navSocket)
