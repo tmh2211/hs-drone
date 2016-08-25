@@ -40,3 +40,11 @@ executable ForwardBackward
                        base >=4.7,
                        mtl >= 2.2
   main-is:             ForwardBackward.hs
+
+executable Oscillation
+  HS-source-dirs:      examples
+  build-depends:       hs-drone,
+                       base >=4.7,
+                       mtl >= 2.2,
+                       dunai >= 0.1
+  main-is:             Oscillation.hs

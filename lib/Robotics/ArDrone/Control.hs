@@ -51,6 +51,40 @@ data AtCommand = AtRef String
 
 type SequenceNumber = Int
 
+connectDrone :: String -> IO Socket
+connectDrone ip = do
+    addrInfos <- getAddrInfo Nothing (Just ip) (Just "5556")
+    let serverAddr = head addrInfos
+
+    sock <- socket (addrFamily serverAddr) Datagram defaultProtocol
+    connect sock (addrAddress serverAddr)
+
+    return sock
+
+runDrone :: String -> [(Int, ArDroneMsg)] -> IO ()
+runDrone ip msgs = do
+    sock <- connectDrone ip
+
+    let commands :: [(SequenceNumber, AtCommand)]
+        commands = zip [1..] . concat $ do
+            (waitAfterward, msg) <- msgs
+            -- how many times do we send this msg out?
+            -- supposing we send it out every 30 ms
+            let n = waitAfterward `div` 30
+
+            return . replicate n $ toAtCommand msg
+
+    forM_ commands $ \(num, command) -> do
+        send sock $ fromAtCommand command num
+        threadDelay 30000
+
+main = withSocketsDo $ do
+    runDrone "192.168.1.1" $
+        [ (6000, TakeOff)
+        , (2000, CounterClockwise 0.5)
+        , (2000, Land)
+        ]
+
 toAtCommand :: ArDroneMsg -> AtCommand
 toAtCommand msg =
     case msg of

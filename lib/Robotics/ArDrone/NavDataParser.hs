@@ -3,6 +3,8 @@ module Robotics.ArDrone.NavDataParser
 , runGet
 , BS.fromStrict
 , NavData(..)
+, PhysMeasures(..)
+, Vector(..)
 ) where
 
 import qualified Data.ByteString.Lazy as BS
@@ -14,6 +16,11 @@ data Vector = Vector { x :: Float
                      , y :: Float
                      , z :: Float
                      } deriving (Show)
+
+instance Monoid Vector where
+  mempty = Vector 0 0 0
+  Vector x1 y1 z1 `mappend` Vector x2 y2 z2 = Vector (x1 + x2) (y1 + y2) (z1 + z2)
+
 
 --Datatype holding the important data from the the demo_data struct
 data DemoData = DemoData { flyState :: Word32

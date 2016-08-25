@@ -28,6 +28,7 @@ type Drone a = StateT DroneState IO a
 takeOff :: Drone ()
 takeOff = do
   cmd $ toAtCommand TakeOff
+  wait 4
 
 land :: Drone ()
 land = do
@@ -40,6 +41,14 @@ stop = do
 disableEmergency :: Drone ()
 disableEmergency = do
   cmd $ toAtCommand DisableEmergency
+
+--calibrate :: Drone ()
+--calibrate = do
+--  cmd $ toAtCommand Calibrate
+
+ftrim :: Drone ()
+ftrim = do
+  cmd $ toAtCommand FTrim
 
 flyForward :: Float -> Drone ()
 flyForward v = do
@@ -114,13 +123,13 @@ getNavData = do
 
 wait :: Double -> Drone ()
 wait t
-  | t > 0.1 = do
+  | t > 0.01 = do
     lastCmd <- gets lastCommand
     state <- get
-    lift $ threadDelay 100000
+    lift $ threadDelay 10000
     cmd lastCmd
     put $ state { seqNr = seqNr state + 1 }
-    wait ( t - 0.1 )
+    wait ( t - 0.01 )
   | otherwise = return ()
 
 runDrone :: Drone a -> IO a
