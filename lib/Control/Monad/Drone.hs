@@ -43,6 +43,14 @@ initNavaData = do
   cmd $ AtRef "0"
   cmd $ AtPCmd False 0.0 0.0 0.0 0.0
 
+takeOff :: Drone ()
+takeOff = do
+  cmd $ toAtCommand TakeOff
+
+land :: Drone ()
+land = do
+  cmd $ toAtCommand Land
+
 inc :: Drone ()
 inc = do
   state <- get
@@ -52,7 +60,9 @@ cmd :: AtCommand -> Drone ()
 cmd atcmd = do
   n <- gets seqNr
   ctrlS <- gets ctrlSocket
+  state <- get
   lift $ send ctrlS $ fromAtCommand atcmd $ fromIntegral n
+  put $ state { lastCommand = atcmd}
   inc
 
 getNavData :: Drone NavData
