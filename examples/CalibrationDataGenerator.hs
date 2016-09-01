@@ -39,8 +39,9 @@ main = do
   putStrLn "Now put the drone in a stable position with right hand side of the drone [from the drones point pov] facing downwoards. Press enter."
   _ <- getLine
   writeIORef ref $ Worker RightSideDown
-  putStrLn "Calibration matrix is now being calculated and written to a file."
-  threadDelay 10000000
+  putStrLn "Now wait while the calibration data is calculated."
+  waitForWorkerThread ref
+  putStrLn "Thanks for your patience."
 
 droneCommunication :: IORef ActiveThread -> IO ()
 droneCommunication session = do
@@ -48,21 +49,27 @@ droneCommunication session = do
     initNavaData
     orientation <- waitForMainThread session
     ensureOrientation orientation BottomDown
+    flushSocketBuffer
     z <- calculateAvgVector
     liftIO $ writeIORef session Main
     orientation <- waitForMainThread session
     ensureOrientation orientation CameraDown
+    flushSocketBuffer
     x <- calculateAvgVector
     liftIO $ writeIORef session Main
     orientation <- waitForMainThread session
     ensureOrientation orientation RightSideDown
+    flushSocketBuffer
     y <- calculateAvgVector
     let vlist = [(vectorToList x), (vectorToList y), (vectorToList z)]
-    let matrix = transpose $ fromLists vlist
-    return (matrix)
+    let matrix = inverse $ transpose $ fromLists vlist
+    return matrix
   case result of
     Left e -> liftIO $ putStrLn $ show e
-    Right m -> liftIO $ putStrLn $ show m
+    Right r -> case r of
+      Left e2 -> putStrLn $ show e2
+      Right m -> writeFile "calib_data.txt" $ show m
+  writeIORef session Main
 
 waitForMainThread :: IORef ActiveThread -> Drone DroneOrientation
 waitForMainThread ref = do
@@ -85,7 +92,7 @@ ensureOrientation o1 o2 = if o1 == o2 then return () else throwError ProtocolErr
 
 calculateAvgVector :: Drone Vector
 calculateAvgVector = do
-  vs <- replicateM 150 readAccVector
+  vs <- replicateM 1000 readAccVector
   let n = fromIntegral $ length vs
   let vecSum = foldr addVector (Vector 0 0 0) vs
   let vecResult = Vector ((x vecSum)/n) ((y vecSum)/n) ((z vecSum)/n)

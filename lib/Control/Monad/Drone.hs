@@ -13,6 +13,7 @@ import Control.Monad.Except
 import Robotics.ArDrone.Control
 import Robotics.ArDrone.NavDataParser
 
+maxListenQueue = 1
 droneIp="192.168.1.1"
 navPort=5554
 ctrlPort=5556
@@ -90,7 +91,7 @@ initNavaData = do
   cmd $ AtCtrl 5 0
   cmd $ AtRef "0"
   cmd $ AtPCmd False 0.0 0.0 0.0 0.0
-  cmd $ AtConfig "general:navdata_demo" "TRUE"
+  cmd $ AtConfig "general:navdata_demo" "FALSE"
   cmd $ AtCtrl 5 0
   cmd $ AtRef "0"
   cmd $ AtPCmd False 0.0 0.0 0.0 0.0
@@ -120,19 +121,25 @@ cmd atcmd = do
 getNavData :: Drone NavData
 getNavData = do
   navS <- gets navDataSocket
-  msg <- lift $ lift $ NBS.recv navS 4096
+  msg <- liftIO $ NBS.recv navS 4096
   let navData = runGetOrFail parseNavData $ fromStrict msg
   case navData of
     Left _ -> throwError ParseError
     Right (_, _, n) -> return n
 
+flushSocketBuffer :: Drone BS.ByteString
+flushSocketBuffer = do
+  navS <- gets navDataSocket
+  msg <- liftIO $ NBS.recv navS 65536
+  return msg
+
 wait :: Double -> Drone ()
 wait t
-  | t > 0.01 = do
+  | t >= 0.01 = do
     state <- get
     liftIO $ threadDelay 10000
     stayAlive
-    put $ state { seqNr = seqNr state + 1 }
+    inc
     wait ( t - 0.01 )
   | otherwise = return ()
 

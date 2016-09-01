@@ -5,6 +5,7 @@ module Robotics.ArDrone.NavDataParser
 , NavData(..)
 , PhysMeasures(..)
 , Vector(..)
+, Header(..)
 ) where
 
 import qualified Data.ByteString.Lazy as BS
@@ -41,7 +42,7 @@ data PhysMeasures = PhysMeasures { accelerometers :: Vector
 --Navdata package header
 data Header = Header { header :: Word32
                      , state :: Word32
-                     , seqNr :: Word32
+                     , sequenceNr :: Word32
                      , visionFlag :: Word32
                      } deriving (Show)
 
