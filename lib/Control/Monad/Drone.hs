@@ -8,6 +8,7 @@ import Data.Binary.Get
 import qualified Network.Socket.ByteString as NBS
 import qualified Data.ByteString as BS
 import Data.Word
+import Control.Monad.Except
 
 import Robotics.ArDrone.Control
 import Robotics.ArDrone.NavDataParser
@@ -17,13 +18,15 @@ navPort=5554
 ctrlPort=5556
 byte = BS.singleton ( 1 :: Word8)
 
+data DroneExceptions = ParseError | ProtocolError deriving (Show)
 
 data DroneState = DroneState { seqNr :: Integer
                              , lastCommand :: AtCommand
                              , ctrlSocket :: Socket
                              , navDataSocket :: Socket }
 
-type Drone a = StateT DroneState IO a
+
+type Drone a = ExceptT DroneExceptions (StateT DroneState IO) a
 
 takeOff :: Drone ()
 takeOff = do
@@ -110,29 +113,33 @@ cmd atcmd = do
   n <- gets seqNr
   ctrlS <- gets ctrlSocket
   state <- get
-  lift $ send ctrlS $ fromAtCommand atcmd $ fromIntegral n
+  liftIO $ send ctrlS $ fromAtCommand atcmd $ fromIntegral n
   put $ state { lastCommand = atcmd}
   inc
 
 getNavData :: Drone NavData
 getNavData = do
   navS <- gets navDataSocket
-  msg <- lift $ NBS.recv navS 4096
-  let navData = runGet parseNavData $ fromStrict msg
-  return navData
+  msg <- lift $ lift $ NBS.recv navS 4096
+  let navData = runGetOrFail parseNavData $ fromStrict msg
+  case navData of
+    Left _ -> throwError ParseError
+    Right (_, _, n) -> return n
 
 wait :: Double -> Drone ()
 wait t
   | t > 0.01 = do
-    lastCmd <- gets lastCommand
     state <- get
-    lift $ threadDelay 10000
-    cmd lastCmd
+    liftIO $ threadDelay 10000
+    stayAlive
     put $ state { seqNr = seqNr state + 1 }
     wait ( t - 0.01 )
   | otherwise = return ()
 
-runDrone :: Drone a -> IO a
+stayAlive :: Drone ()
+stayAlive = cmd =<< gets lastCommand
+
+runDrone :: Drone a -> IO (Either DroneExceptions a)
 runDrone d = do
   ctrlInfo <- getAddrInfo Nothing (Just droneIp) (Just $ show ctrlPort)
   let ctrlAddr = head ctrlInfo
@@ -146,4 +153,4 @@ runDrone d = do
 
   NBS.send navSocket byte
 
-  evalStateT d (DroneState 0 (AtCtrl 5 0) ctrlSocket navSocket)
+  evalStateT (runExceptT d) (DroneState 0 (AtCtrl 5 0) ctrlSocket navSocket)

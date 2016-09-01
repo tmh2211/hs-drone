@@ -7,6 +7,7 @@ import Data.MonadicStreamFunction
 import Data.Maybe
 import Data.Monoid
 import Data.IORef
+import Control.Monad.Except
 
 import Control.Monad.Drone
 import Robotics.ArDrone.NavDataParser
@@ -16,64 +17,73 @@ data Matrix3x3 = Matrix3x3 { col1 :: Vector
                            , col3 :: Vector
                            } deriving (Show)
 
-data CalibState = Start  | BottomDown | CameraDown | SideDown | Calculating
+
+data DroneOrientation = BottomDown | CameraDown | RightSideDown deriving (Eq)
+
+data ActiveThread = Main | Worker DroneOrientation
+
 
 main :: IO ()
 main = do
-  ref <- newIORef Start
-  result <- newIORef $ Matrix3x3 (Vector 0 0 0) (Vector 0 0 0) (Vector 0 0 0)
-  forkIO $ droneCommunication ref result
+  ref <- newIORef Main
+  forkIO $ droneCommunication ref
   putStrLn "Put the drone on a level surface and leave it there. Press enter key."
   _ <- getLine
-  writeIORef ref BottomDown
-  waitWhileCalculating ref
+  writeIORef ref $ Worker BottomDown
+  waitForWorkerThread ref
   putStrLn "Now put the drone in a stable position with the camera facing downwoards. Press enter."
   _ <-  getLine
-  writeIORef ref CameraDown
-  waitWhileCalculating ref
+  writeIORef ref $ Worker CameraDown
+  waitForWorkerThread ref
   putStrLn "Now put the drone in a stable position with right hand side of the drone [from the drones point pov] facing downwoards. Press enter."
   _ <- getLine
-  writeIORef ref SideDown
-  waitWhileCalculating ref
-  m <- readIORef result
-  putStrLn $ show m
+  writeIORef ref $ Worker RightSideDown
+  putStrLn "Calibration matrix is now being calculated and written to a file."
+  threadDelay 10000000
 
-waitWhileCalculating :: IORef CalibState -> IO ()
-waitWhileCalculating ref = do
-  threadDelay 500000
-  v <- readIORef ref
-  case v of
-    Calculating -> waitWhileCalculating ref
-    _ -> return ()
-
-droneCommunication :: IORef (CalibState) -> IORef Matrix3x3 -> IO ()
-droneCommunication ref result = do
-  runDrone $ do
+droneCommunication :: IORef ActiveThread -> IO ()
+droneCommunication session = do
+  result <- runDrone $ do
     initNavaData
-    forever $ do
-      value <- lift $ readIORef ref
-      case value of
-        Start -> do wait 0.2
-        BottomDown -> do lift $ writeIORef ref Calculating
-                         v <- calculateAvgVector
-                         Matrix3x3 c1 c2 c3 <- lift $ readIORef result
-                         lift $ writeIORef result $ Matrix3x3 c1 c2 v
-                         lift $ writeIORef ref Start
-        CameraDown -> do lift $ writeIORef ref Calculating
-                         v <- calculateAvgVector
-                         Matrix3x3 c1 c2 c3 <- lift $ readIORef result
-                         lift $ writeIORef result $ Matrix3x3 v c2 c3
-                         lift $ writeIORef ref Start
-        SideDown -> do lift $ writeIORef ref Calculating
-                       v <- calculateAvgVector
-                       Matrix3x3 c1 c2 c3 <- lift $ readIORef result
-                       lift $ writeIORef result $ Matrix3x3 c1 v c3
-                       lift $ writeIORef ref Start
+    orientation <- waitForMainThread session
+    ensureOrientation orientation BottomDown
+    z <- calculateAvgVector
+    liftIO $ writeIORef session Main
+    orientation <- waitForMainThread session
+    ensureOrientation orientation CameraDown
+    x <- calculateAvgVector
+    liftIO $ writeIORef session Main
+    orientation <- waitForMainThread session
+    ensureOrientation orientation RightSideDown
+    y <- calculateAvgVector
+    return (Matrix3x3 x y z)
+  case result of
+    Left e -> liftIO $ putStrLn $ show e
+    Right m -> liftIO $ putStrLn $ show m
+
+waitForMainThread :: IORef ActiveThread -> Drone DroneOrientation
+waitForMainThread ref = do
+  thread <- liftIO $ readIORef ref
+  case thread of
+    Main -> do wait 0.1
+               waitForMainThread ref
+    Worker o -> return o
+
+waitForWorkerThread :: IORef ActiveThread -> IO ()
+waitForWorkerThread ref = do
+  threadDelay 500000
+  thread <- liftIO $ readIORef ref
+  case thread of
+    Worker _ -> do waitForWorkerThread ref
+    Main -> return ()
+
+ensureOrientation :: DroneOrientation -> DroneOrientation -> Drone ()
+ensureOrientation o1 o2 = if o1 == o2 then return () else throwError ProtocolError
 
 calculateAvgVector :: Drone Vector
 calculateAvgVector = do
-  let n = (150 :: Float)
   vs <- replicateM 150 readAccVector
+  let n = fromIntegral $ length vs
   let vecSum = foldr addVector (Vector 0 0 0) vs
   let vecResult = Vector ((x vecSum)/n) ((y vecSum)/n) ((z vecSum)/n)
   return vecResult
@@ -81,6 +91,7 @@ calculateAvgVector = do
 readAccVector :: Drone Vector
 readAccVector = do
   navData <- getNavData
+  stayAlive
   let accVector = fromMaybe (Vector 0 0 0) $ accelerometers <$> physMeasures navData
   return accVector
 
