@@ -30,7 +30,8 @@ library
                        data-binary-ieee754 >=0.4 && <0.5,
                        bytestring >= 0.10,
                        binary >= 0.8.4,
-                       mtl >= 2.2
+                       mtl >= 2.2,
+                       matrix >= 0.3.5
   -- hs-source-dirs:
   default-language:    Haskell2010
 
@@ -54,5 +55,6 @@ executable CalibrationDataGenerator
   build-depends:       hs-drone,
                        base >=4.7,
                        mtl >= 2.2,
-                       dunai >= 0.1
+                       dunai >= 0.1,
+                       matrix >= 0.3.5
   main-is:             CalibrationDataGenerator.hs

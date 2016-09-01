@@ -8,6 +8,7 @@ import Data.Maybe
 import Data.Monoid
 import Data.IORef
 import Control.Monad.Except
+import Data.Matrix
 
 import Control.Monad.Drone
 import Robotics.ArDrone.NavDataParser
@@ -56,7 +57,9 @@ droneCommunication session = do
     orientation <- waitForMainThread session
     ensureOrientation orientation RightSideDown
     y <- calculateAvgVector
-    return (Matrix3x3 x y z)
+    let vlist = [(vectorToList x), (vectorToList y), (vectorToList z)]
+    let matrix = transpose $ fromLists vlist
+    return (matrix)
   case result of
     Left e -> liftIO $ putStrLn $ show e
     Right m -> liftIO $ putStrLn $ show m
@@ -97,3 +100,6 @@ readAccVector = do
 
 addVector :: Vector -> Vector -> Vector
 addVector (Vector x1 y1 z1) (Vector x2 y2 z2) = Vector (x1 + x2) (y1 + y2) (z1 + z2)
+
+vectorToList :: Vector -> [Float]
+vectorToList (Vector x y z) = [x, y, z]
