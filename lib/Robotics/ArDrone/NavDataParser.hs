@@ -46,10 +46,35 @@ data Header = Header { header :: Word32
                      , visionFlag :: Word32
                      } deriving (Show)
 
+--Datatype holding the drone time
+data Time = Time { droneTime :: Word32
+                 } deriving (Show)
+
+--Datatype holding the raw meassurements of the drone sensors
+data RawMeassures = RawMeassures { accVector :: (Word16, Word16, Word16)
+                                 , gyroVector :: (Word16, Word16, Word16)
+                                 , gyro110 :: ( Word16, Word16 )
+                                 , batteryMilliVolt :: Word32
+                                 , usEchoStart :: Word16
+                                 , usEchoEnd :: Word16
+                                 , usEchoAssociation :: Word16
+                                 , usEchoDistance :: Word16
+                                 , usCurveTime :: Word16
+                                 , usCurveValue :: Word16
+                                 , usCurveRef :: Word16
+                                 , echoFlagIni :: Word16
+                                 , echoNum :: Word16
+                                 , echoSum :: Word32
+                                 , altTemp :: Word32
+                                 , gradient :: Word16
+                                 } deriving (Show)
+
 data CheckSum = CheckSum { value :: Word32 } deriving (Show)
 
 data NavData = NavData { navDataHeader :: Maybe Header
                        , demoData :: Maybe DemoData
+                       , time :: Maybe Time
+                       , rawMeassures :: Maybe RawMeassures
                        , physMeasures :: Maybe PhysMeasures
                        , cks :: Maybe CheckSum
                        } deriving (Show)
@@ -57,22 +82,55 @@ data NavData = NavData { navDataHeader :: Maybe Header
 parseNavData :: Get NavData
 parseNavData = do
   header <- getHeader
-  getNavData (NavData (Just header) Nothing Nothing Nothing)
+  getNavData (NavData (Just header) Nothing Nothing Nothing Nothing Nothing)
 
 getNavData :: NavData -> Get NavData
-getNavData nd@(NavData h d p c) = do
+getNavData nd@(NavData h d t r p c) = do
   id <- getWord16le
   size <- getWord16le
   case id of
     0     -> do demoData <- getDemoData
-                getNavData (NavData h (Just demoData) p c)
+                getNavData (NavData h (Just demoData) t r p c)
+    1     -> do time <- getTime
+                getNavData (NavData h d (Just time) r p c)
+    2     -> do rawMeassures <- getRawMeassures
+                getNavData (NavData h d t (Just rawMeassures) p c)
     3     -> do physMeasures <- getPhysMeasures
-                getNavData (NavData h d (Just physMeasures) c)
+                getNavData (NavData h d t r (Just physMeasures) c)
     65535 -> do cks <- getCheckSum
-                return (NavData h d p (Just cks))
+                return (NavData h d t r p (Just cks))
     _     -> do skip (fromIntegral size - 4)
                 getNavData nd
 
+getRawMeassures :: Get RawMeassures
+getRawMeassures = do
+  accX <- getWord16le
+  accY <- getWord16le
+  accZ <- getWord16le
+  gyrX <- getWord16le
+  gyrY <- getWord16le
+  gyrZ <- getWord16le
+  gyr110X <- getWord16le
+  gyr110Y <- getWord16le
+  batteryMilliVolt <- getWord32le
+  usEchoStart <- getWord16le
+  usEchoEnd <- getWord16le
+  usEchoAssociation <- getWord16le
+  usEchoDistance <- getWord16le
+  usCurveTime <- getWord16le
+  usCurveValue <- getWord16le
+  usCurveRef <- getWord16le
+  echoFlagIni <- getWord16le
+  echoNum <- getWord16le
+  echoSum <- getWord32le
+  altTemp <- getWord32le
+  gradient <- getWord16le
+  return (RawMeassures (accX, accY, accZ) (gyrX, gyrY, gyrZ) (gyr110X, gyr110Y) batteryMilliVolt usEchoStart usEchoEnd usEchoAssociation usEchoDistance usCurveTime usCurveValue usCurveRef echoFlagIni echoNum echoSum altTemp gradient)
+
+getTime :: Get Time
+getTime = do
+  time <- getWord32le
+  return (Time time)
 
 getHeader :: Get Header
 getHeader = do

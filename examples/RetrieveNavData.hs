@@ -4,10 +4,12 @@ import Control.Monad.Trans
 
 main :: IO ()
 main = do
-  runDrone $ do
+  result <- runDrone $ do
     initNavaData
     mainLoop
-  return ()
+  case result of
+    Left e -> liftIO $ putStrLn $ show e
+    Right r -> return ()
 
 mainLoop :: Drone ()
 mainLoop = do

@@ -21,7 +21,7 @@ navPort=5554
 ctrlPort=5556
 byte = BS.singleton ( 1 :: Word8)
 
-data DroneExceptions = ParseError | ProtocolError deriving (Show)
+data DroneExceptions = ParseError String | ProtocolError deriving (Show)
 
 data DroneState = DroneState { seqNr :: Integer
                              , lastCommand :: AtCommand
@@ -94,9 +94,6 @@ configureNavDataOptions xs = do
   let ints = map optionToInt xs
   let bitPos = map (shiftL (1 :: Int)) ints
   let mask = foldr (.|.) 1 bitPos
-  liftIO $ putStrLn $ show ints
-  liftIO $ putStrLn $ show bitPos
-  liftIO $ putStrLn $ show mask
   cmd $ AtConfig "general:navdata_options" $ show mask
   cmd $ AtCtrl 5 0
 
@@ -104,7 +101,7 @@ initNavaData :: Drone ()
 initNavaData = do
   cmd $ AtCtrl 5 0
   cmd $ AtConfig "general:navdata_demo" "FALSE"
-  configureNavDataOptions [DEMO, RAW_MEASSURES, PHYS_MEASSURES]
+  configureNavDataOptions [DEMO, TIME, RAW_MEASSURES, PHYS_MEASSURES]
   cmd $ AtCtrl 5 0
 
 inc :: Drone ()
@@ -127,7 +124,7 @@ getNavData = do
   msg <- liftIO $ NBS.recv navS 4096
   let navData = runGetOrFail parseNavData $ fromStrict msg
   case navData of
-    Left _ -> throwError ParseError
+    Left (_, _, s) -> throwError $ ParseError s
     Right (_, _, n) -> return n
 
 flushSocketBuffer :: Drone BS.ByteString
