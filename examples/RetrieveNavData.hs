@@ -1,15 +1,17 @@
 import Control.Monad.Drone
-import Robotics.ArDrone.Control
+import Robotics.ArDrone.Control hiding (runDrone, main)
 import Control.Monad.Trans
 
 main :: IO ()
-main = runDrone $ do
-  initNavaData
-  mainLoop
+main = do
+  runDrone $ do
+    initNavaData
+    mainLoop
+  return ()
 
 mainLoop :: Drone ()
 mainLoop = do
   nd <- getNavData
-  lift $ print nd
+  liftIO $ print nd
   wait 0.2
   mainLoop

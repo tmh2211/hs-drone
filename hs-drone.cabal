@@ -42,6 +42,20 @@ executable ForwardBackward
                        mtl >= 2.2
   main-is:             ForwardBackward.hs
 
+executable TakeOff
+  HS-source-dirs:      examples
+  build-depends:       hs-drone,
+                       base >=4.7,
+                       mtl >= 2.2
+  main-is:             TakeOff.hs
+
+executable RetrieveNavData
+  HS-source-dirs:      examples
+  build-depends:       hs-drone,
+                       base >=4.7,
+                       mtl >= 2.2
+  main-is:             RetrieveNavData.hs
+
 executable Oscillation
   HS-source-dirs:      examples
   build-depends:       hs-drone,
