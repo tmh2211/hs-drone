@@ -8,10 +8,12 @@ import Data.Binary.Get
 import qualified Network.Socket.ByteString as NBS
 import qualified Data.ByteString as BS
 import Data.Word
+import Data.Bits
 import Control.Monad.Except
 
 import Robotics.ArDrone.Control
 import Robotics.ArDrone.NavDataParser
+import Robotics.ArDrone.NavDataConstants
 
 maxListenQueue = 1
 droneIp="192.168.1.1"
@@ -86,10 +88,23 @@ rotateCounterClockwise :: Float -> Drone ()
 rotateCounterClockwise v = do
   cmd $ toAtCommand $ CounterClockwise v
 
+configureNavDataOptions :: [NavDataOption] -> Drone ()
+configureNavDataOptions [] = return ()
+configureNavDataOptions xs = do
+  let ints = map optionToInt xs
+  let bitPos = map (shiftL (1 :: Int)) ints
+  let mask = foldr (.|.) 1 bitPos
+  liftIO $ putStrLn $ show ints
+  liftIO $ putStrLn $ show bitPos
+  liftIO $ putStrLn $ show mask
+  cmd $ AtConfig "general:navdata_options" $ show mask
+  cmd $ AtCtrl 5 0
+
 initNavaData :: Drone ()
 initNavaData = do
+  cmd $ AtCtrl 5 0
   cmd $ AtConfig "general:navdata_demo" "FALSE"
-  cmd $ AtConfig "general:navdata_options" "8"
+  configureNavDataOptions [DEMO, RAW_MEASSURES, PHYS_MEASSURES]
   cmd $ AtCtrl 5 0
 
 inc :: Drone ()

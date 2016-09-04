@@ -22,6 +22,7 @@ library
                        Robotics.ArDrone.Repl,
                        Robotics.ArDrone.NavData,
                        Robotics.ArDrone.NavDataParser,
+                       Robotics.ArDrone.NavDataConstants,
                        Control.Monad.Drone
   -- other-modules:
   other-extensions:    NamedFieldPuns
