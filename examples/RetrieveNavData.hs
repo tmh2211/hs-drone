@@ -13,5 +13,5 @@ mainLoop :: Drone ()
 mainLoop = do
   nd <- getNavData
   liftIO $ print nd
-  wait 0.2
+  wait 0.01
   mainLoop

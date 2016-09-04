@@ -88,21 +88,9 @@ rotateCounterClockwise v = do
 
 initNavaData :: Drone ()
 initNavaData = do
-  cmd $ AtCtrl 5 0
-  cmd $ AtRef "0"
-  cmd $ AtPCmd False 0.0 0.0 0.0 0.0
   cmd $ AtConfig "general:navdata_demo" "FALSE"
-  cmd $ AtCtrl 5 0
-  cmd $ AtRef "0"
-  cmd $ AtPCmd False 0.0 0.0 0.0 0.0
-  cmd $ AtRef "0"
-  cmd $ AtPCmd False 0.0 0.0 0.0 0.0
   cmd $ AtConfig "general:navdata_options" "8"
-  cmd $ AtRef "0"
-  cmd $ AtPCmd False 0.0 0.0 0.0 0.0
   cmd $ AtCtrl 5 0
-  cmd $ AtRef "0"
-  cmd $ AtPCmd False 0.0 0.0 0.0 0.0
 
 inc :: Drone ()
 inc = do
