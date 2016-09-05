@@ -9,11 +9,13 @@ import qualified Network.Socket.ByteString as NBS
 import qualified Data.ByteString as BS
 import Data.Word
 import Data.Bits
+import Data.IORef
 import Control.Monad.Except
 
 import Robotics.ArDrone.Control
 import Robotics.ArDrone.NavDataParser
 import Robotics.ArDrone.NavDataConstants
+import Robotics.ArDrone.NavDataServer
 
 maxListenQueue = 1
 droneIp="192.168.1.1"
@@ -26,7 +28,9 @@ data DroneExceptions = ParseError String | ProtocolError deriving (Show)
 data DroneState = DroneState { seqNr :: Integer
                              , lastCommand :: AtCommand
                              , ctrlSocket :: Socket
-                             , navDataSocket :: Socket }
+                             , navDataSocket :: Socket
+                             , currentPacket :: IORef (Maybe NavData)
+                             }
 
 
 type Drone a = ExceptT DroneExceptions (StateT DroneState IO) a
@@ -118,20 +122,22 @@ cmd atcmd = do
   put $ state { lastCommand = atcmd}
   inc
 
-getNavData :: Drone NavData
+{-getNavData :: Drone NavData
 getNavData = do
   navS <- gets navDataSocket
   msg <- liftIO $ NBS.recv navS 4096
   let navData = runGetOrFail parseNavData $ fromStrict msg
   case navData of
     Left (_, _, s) -> throwError $ ParseError s
-    Right (_, _, n) -> return n
+    Right (_, _, n) -> return n-}
 
-flushSocketBuffer :: Drone BS.ByteString
-flushSocketBuffer = do
-  navS <- gets navDataSocket
-  msg <- liftIO $ NBS.recv navS 65536
-  return msg
+getNavData :: Drone NavData
+getNavData = do
+  ref <- gets currentPacket
+  packet <- liftIO $ readIORef ref
+  case packet of
+    Nothing -> getNavData
+    Just n -> return n
 
 wait :: Double -> Drone ()
 wait t
@@ -160,4 +166,8 @@ runDrone d = do
 
   NBS.send navSocket byte
 
-  evalStateT (runExceptT d) (DroneState 0 (AtCtrl 5 0) ctrlSocket navSocket)
+  currentPacket <- newIORef $ Just emptyNavData
+
+  forkIO $ runServer navSocket currentPacket
+
+  evalStateT (runExceptT d) (DroneState 0 (AtCtrl 5 0) ctrlSocket navSocket currentPacket)

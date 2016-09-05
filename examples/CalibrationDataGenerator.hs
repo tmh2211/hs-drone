@@ -49,17 +49,14 @@ droneCommunication session = do
     initNavaData
     orientation <- waitForMainThread session
     ensureOrientation orientation BottomDown
-    flushSocketBuffer
     z <- calculateAvgVector
     liftIO $ writeIORef session Main
     orientation <- waitForMainThread session
     ensureOrientation orientation CameraDown
-    flushSocketBuffer
     x <- calculateAvgVector
     liftIO $ writeIORef session Main
     orientation <- waitForMainThread session
     ensureOrientation orientation RightSideDown
-    flushSocketBuffer
     y <- calculateAvgVector
     let vlist = [(vectorToList x), (vectorToList y), (vectorToList z)]
     let matrix = inverse $ transpose $ fromLists vlist
@@ -68,7 +65,8 @@ droneCommunication session = do
     Left e -> liftIO $ putStrLn $ show e
     Right r -> case r of
       Left e2 -> putStrLn $ show e2
-      Right m -> writeFile "calib_data.txt" $ show m
+      Right m -> do writeFile "calib_data.txt" $ show m
+                    putStrLn $ show $ inverse m
   writeIORef session Main
 
 waitForMainThread :: IORef ActiveThread -> Drone DroneOrientation

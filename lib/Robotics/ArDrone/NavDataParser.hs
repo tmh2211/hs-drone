@@ -2,6 +2,7 @@ module Robotics.ArDrone.NavDataParser
 ( parseNavData
 , runGet
 , BS.fromStrict
+, emptyNavData
 , NavData(..)
 , PhysMeasures(..)
 , Vector(..)
@@ -78,6 +79,9 @@ data NavData = NavData { navDataHeader :: Maybe Header
                        , physMeasures :: Maybe PhysMeasures
                        , cks :: Maybe CheckSum
                        } deriving (Show)
+
+emptyNavData :: NavData
+emptyNavData = NavData Nothing Nothing Nothing Nothing Nothing Nothing
 
 parseNavData :: Get NavData
 parseNavData = do
