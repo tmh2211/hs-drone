@@ -65,8 +65,7 @@ droneCommunication session = do
     Left e -> liftIO $ putStrLn $ show e
     Right r -> case r of
       Left e2 -> putStrLn $ show e2
-      Right m -> do writeFile "calib_data.txt" $ show m
-                    putStrLn $ show $ inverse m
+      Right m -> writeFile "calib_data.txt" $ show m
   writeIORef session Main
 
 waitForMainThread :: IORef ActiveThread -> Drone DroneOrientation
