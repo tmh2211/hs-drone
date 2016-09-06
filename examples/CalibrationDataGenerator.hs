@@ -12,12 +12,7 @@ import Data.Matrix
 
 import Control.Monad.Drone
 import Robotics.ArDrone.NavDataParser
-
-data Matrix3x3 = Matrix3x3 { col1 :: Vector
-                           , col2 :: Vector
-                           , col3 :: Vector
-                           } deriving (Show)
-
+import Util.MatrixParser
 
 data DroneOrientation = BottomDown | CameraDown | RightSideDown deriving (Eq)
 
@@ -65,7 +60,7 @@ droneCommunication session = do
     Left e -> liftIO $ putStrLn $ show e
     Right r -> case r of
       Left e2 -> putStrLn $ show e2
-      Right m -> writeFile "calib_data.txt" $ show m
+      Right m -> writeMatrixToFile "calibData.txt" m
   writeIORef session Main
 
 waitForMainThread :: IORef ActiveThread -> Drone DroneOrientation
@@ -91,6 +86,7 @@ calculateAvgVector :: Drone Vector
 calculateAvgVector = do
   vs <- replicateM 1000 readAccVector
   let n = fromIntegral $ length vs
+  liftIO $ putStrLn $ show n
   let vecSum = foldr addVector (Vector 0 0 0) vs
   let vecResult = Vector ((x vecSum)/n) ((y vecSum)/n) ((z vecSum)/n)
   return vecResult
@@ -98,6 +94,7 @@ calculateAvgVector = do
 readAccVector :: Drone Vector
 readAccVector = do
   navData <- getNavData
+  --liftIO $ putStrLn $ show navData
   stayAlive
   let accVector = fromMaybe (Vector 0 0 0) $ accelerometers <$> physMeasures navData
   return accVector

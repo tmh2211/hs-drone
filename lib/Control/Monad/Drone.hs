@@ -10,12 +10,14 @@ import qualified Data.ByteString as BS
 import Data.Word
 import Data.Bits
 import Data.IORef
+import Data.Matrix
 import Control.Monad.Except
 
 import Robotics.ArDrone.Control
 import Robotics.ArDrone.NavDataParser
 import Robotics.ArDrone.NavDataConstants
 import Robotics.ArDrone.NavDataServer
+import Util.MatrixParser
 
 maxListenQueue = 1
 droneIp="192.168.1.1"
@@ -28,7 +30,7 @@ data DroneExceptions = ParseError String | ProtocolError deriving (Show)
 data DroneState = DroneState { seqNr :: Integer
                              , lastCommand :: AtCommand
                              , ctrlSocket :: Socket
-                             , navDataSocket :: Socket
+                             , calibrationMatrix :: Matrix Float
                              , currentPacket :: IORef (Maybe NavData)
                              }
 
@@ -105,7 +107,7 @@ initNavaData :: Drone ()
 initNavaData = do
   cmd $ AtCtrl 5 0
   cmd $ AtConfig "general:navdata_demo" "FALSE"
-  configureNavDataOptions [DEMO, TIME, RAW_MEASSURES, PHYS_MEASSURES]
+  configureNavDataOptions [PHYS_MEASSURES]
   cmd $ AtCtrl 5 0
 
 inc :: Drone ()
@@ -121,15 +123,6 @@ cmd atcmd = do
   liftIO $ send ctrlS $ fromAtCommand atcmd $ fromIntegral n
   put $ state { lastCommand = atcmd}
   inc
-
-{-getNavData :: Drone NavData
-getNavData = do
-  navS <- gets navDataSocket
-  msg <- liftIO $ NBS.recv navS 4096
-  let navData = runGetOrFail parseNavData $ fromStrict msg
-  case navData of
-    Left (_, _, s) -> throwError $ ParseError s
-    Right (_, _, n) -> return n-}
 
 getNavData :: Drone NavData
 getNavData = do
@@ -170,4 +163,6 @@ runDrone d = do
 
   forkIO $ runServer navSocket currentPacket
 
-  evalStateT (runExceptT d) (DroneState 0 (AtCtrl 5 0) ctrlSocket navSocket currentPacket)
+  matrix <- readMatrixFromFile "calibData.txt"
+
+  evalStateT (runExceptT d) (DroneState 0 (AtCtrl 5 0) ctrlSocket matrix currentPacket)

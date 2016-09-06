@@ -17,7 +17,7 @@ import Data.Word
 data Vector = Vector { x :: Float
                      , y :: Float
                      , z :: Float
-                     } deriving (Show)
+                     } deriving (Show, Read)
 
 instance Monoid Vector where
   mempty = Vector 0 0 0
