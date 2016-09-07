@@ -1,7 +1,9 @@
 module Util.MatrixParser where
 
 import Data.Matrix
---import System.Directory
+import Control.Exception
+import qualified Data.ByteString as BS
+import qualified Data.ByteString.Char8 as BSC
 
 import Robotics.ArDrone.NavDataParser
 
@@ -17,17 +19,14 @@ writeMatrixToFile path matrix = do
 
 readMatrixFromFile :: String -> IO (Matrix Float)
 readMatrixFromFile path = do
-  contents <- readFile path
-  let matrix = toMatrix $ read contents
-  return matrix
-  --exists <- doesFileExist path
-  --case exists of
-  --  True -> do contents <- readFile path
-  --             let matrix = read contents
-  --             return matrix
-  --  False -> do putStrLn "The calibration file does not exist. You should create one."
-  --              let matrix = scaleMatrix 1000 $ identity 3
-  --              return matrix
+  bytes <- (try :: IO BS.ByteString ->IO (Either IOException BS.ByteString)) $ BS.readFile path
+  case bytes of
+    Left e -> do
+      putStrLn "Warning: You didn't create a calibration file with the calibration tool."
+      return $ scaleMatrix (-1/(9.81 :: Float)) $ identity 3
+    Right b -> do
+      let string = BSC.unpack b
+      return $ toMatrix $ read string
 
 fromMatrix :: Matrix Float -> Matrix3x3
 fromMatrix m = Matrix3x3 (Vector (getElem 1 1 m) (getElem 2 1 m) (getElem 3 1 m)) (Vector (getElem 1 2 m) (getElem 2 2 m) (getElem 3 2 m)) (Vector (getElem 1 3 m) (getElem 2 3 m) (getElem 3 3 m))

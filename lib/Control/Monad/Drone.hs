@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 module Control.Monad.Drone where
 
 import Control.Monad.State
@@ -132,7 +133,7 @@ getNavData = do
     Nothing -> getNavData
     Just n -> return n
 
-wait :: Double -> Drone ()
+wait :: Float -> Drone ()
 wait t
   | t >= 0.01 = do
     state <- get
@@ -163,6 +164,6 @@ runDrone d = do
 
   forkIO $ runServer navSocket currentPacket
 
-  matrix <- readMatrixFromFile "calibData.txt"
+  !matrix <- readMatrixFromFile "calibData.txt"
 
   evalStateT (runExceptT d) (DroneState 0 (AtCtrl 5 0) ctrlSocket matrix currentPacket)

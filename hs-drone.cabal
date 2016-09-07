@@ -20,7 +20,6 @@ library
   HS-source-dirs:      lib
   exposed-modules:     Robotics.ArDrone.Control,
                        Robotics.ArDrone.Repl,
-                       Robotics.ArDrone.NavData,
                        Robotics.ArDrone.NavDataParser,
                        Robotics.ArDrone.NavDataConstants,
                        Robotics.ArDrone.NavDataServer,
@@ -64,7 +63,8 @@ executable Oscillation
   build-depends:       hs-drone,
                        base >=4.7,
                        mtl >= 2.2,
-                       dunai >= 0.1
+                       dunai >= 0.1,
+                       matrix >= 0.3.5
   main-is:             Oscillation.hs
 
 executable CalibrationDataGenerator

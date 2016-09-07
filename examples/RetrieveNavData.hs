@@ -1,11 +1,16 @@
-import Control.Monad.Drone
 import Robotics.ArDrone.Control hiding (runDrone, main)
 import Control.Monad.Trans
+
+import Control.Monad.Drone
+import Robotics.ArDrone.NavDataConstants
+import Robotics.ArDrone.NavDataParser
 
 main :: IO ()
 main = do
   result <- runDrone $ do
     initNavaData
+    ftrim
+    configureNavDataOptions [VISION]
     mainLoop
   case result of
     Left e -> liftIO $ putStrLn $ show e
@@ -14,6 +19,10 @@ main = do
 mainLoop :: Drone ()
 mainLoop = do
   nd <- getNavData
-  liftIO $ print nd
-  wait 0.01
+  let opt = vision nd
+  case opt of
+    Nothing -> return ()
+    Just v -> liftIO $ putStrLn $ (show (viCaptureTheta v) ++ "\t" ++ show (viCapturePhi v) ++ "\t" ++ show (viCapturePsi v))
+  --liftIO $ print nd
+  wait 0.1
   mainLoop

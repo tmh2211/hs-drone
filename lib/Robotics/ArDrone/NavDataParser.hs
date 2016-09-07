@@ -3,15 +3,20 @@ module Robotics.ArDrone.NavDataParser
 , runGet
 , BS.fromStrict
 , emptyNavData
+, vectorToMatrix
 , NavData(..)
 , PhysMeasures(..)
 , Vector(..)
 , Header(..)
+, EulerAngles(..)
+, References(..)
+, Vision(..)
 ) where
 
 import qualified Data.ByteString.Lazy as BS
 import Data.Binary.Get
 import Data.Word
+import Data.Matrix
 
 
 data Vector = Vector { x :: Float
@@ -23,6 +28,8 @@ instance Monoid Vector where
   mempty = Vector 0 0 0
   Vector x1 y1 z1 `mappend` Vector x2 y2 z2 = Vector (x1 + x2) (y1 + y2) (z1 + z2)
 
+vectorToMatrix :: Vector -> Matrix Float
+vectorToMatrix (Vector x y z) = fromLists [[x],[y],[z]]
 
 --Datatype holding the important data from the the demo_data struct
 data DemoData = DemoData { flyState :: Word32
@@ -36,6 +43,7 @@ data DemoData = DemoData { flyState :: Word32
 
 
 --Datatype holding the importtant values from the phys_measures struct
+--accelerometer in m/s^2
 data PhysMeasures = PhysMeasures { accelerometers :: Vector
                                  , gyroscopes :: Vector
                                  } deriving (Show)
@@ -70,6 +78,58 @@ data RawMeassures = RawMeassures { accVector :: (Word16, Word16, Word16)
                                  , gradient :: Word16
                                  } deriving (Show)
 
+--Datatype holding information about the offsets of the gyroscope
+data GyroOffsets = GyroOffsets { gOffsets :: Vector } deriving (Show)
+
+--Datatype holding the euler angles theta and phi
+data EulerAngles = EulerAngles { eulerTheta :: Float
+                               , eulerPhi :: Float
+                               } deriving (Show)
+
+--Datatype holding the values of the references struct
+data References = References { refTheta :: Int
+                             , refPhi :: Int
+                             , refThetaI :: Int
+                             , refPhiI :: Int
+                             , refPitch :: Int
+                             , refRoll :: Int
+                             , refYaw :: Int
+                             , refPsi :: Int
+                             , refVx :: Float
+                             , refVy :: Float
+                             , refThetaMod :: Float
+                             , refPhiMod :: Float
+                             , refKVX :: Float
+                             , refKVY :: Float
+                             , refKMode :: Int
+                             , refUiTime :: Float
+                             , refUiTheta :: Float
+                             , refUiPhi :: Float
+                             , refUiPsi :: Float
+                             , refUiPsiAccuracy :: Float
+                             , refUiSeq :: Int
+                             } deriving (Show)
+
+data Vision = Vision { viState :: Word32
+                     , viMisc :: Int
+                     , viPhiTrim :: Float
+                     , viPhiRefProp :: Float
+                     , viThetaTrim :: Float
+                     , viThetaProp :: Float
+                     , newRawPicture :: Int
+                     , viCaptureTheta :: Float
+                     , viCapturePhi :: Float
+                     , viCapturePsi :: Float
+                     , viCaptureAltitude :: Int
+                     , viCaptureTime :: Word32
+                     , viBodyV :: Vector
+                     , viDelta :: Vector
+                     , viGoldDefined :: Word32
+                     , viGoldReset :: Word32
+                     , viGoldX :: Float
+                     , viGoldY :: Float
+                     } deriving (Show)
+
 data CheckSum = CheckSum { value :: Word32 } deriving (Show)
 
 data NavData = NavData { navDataHeader :: Maybe Header
@@ -77,34 +137,111 @@ data NavData = NavData { navDataHeader :: Maybe Header
                        , time :: Maybe Time
                        , rawMeassures :: Maybe RawMeassures
                        , physMeasures :: Maybe PhysMeasures
+                       , gyroOffsets :: Maybe GyroOffsets
+                       , eulerAngles :: Maybe EulerAngles
+                       , references :: Maybe References
+                       , vision :: Maybe Vision
                        , cks :: Maybe CheckSum
                        } deriving (Show)
 
 emptyNavData :: NavData
-emptyNavData = NavData Nothing Nothing Nothing Nothing Nothing Nothing
+emptyNavData = NavData Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
 
 parseNavData :: Get NavData
 parseNavData = do
   header <- getHeader
-  getNavData (NavData (Just header) Nothing Nothing Nothing Nothing Nothing)
+  getNavData (NavData (Just header) Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing)
 
 getNavData :: NavData -> Get NavData
-getNavData nd@(NavData h d t r p c) = do
+getNavData nd@(NavData h d t r p go ea refs vi c) = do
   id <- getWord16le
   size <- getWord16le
   case id of
     0     -> do demoData <- getDemoData
-                getNavData (NavData h (Just demoData) t r p c)
+                getNavData (NavData h (Just demoData) t r p go ea refs vi c)
     1     -> do time <- getTime
-                getNavData (NavData h d (Just time) r p c)
+                getNavData (NavData h d (Just time) r p go ea refs vi c)
     2     -> do rawMeassures <- getRawMeassures
-                getNavData (NavData h d t (Just rawMeassures) p c)
+                getNavData (NavData h d t (Just rawMeassures) p go ea refs vi c)
     3     -> do physMeasures <- getPhysMeasures
-                getNavData (NavData h d t r (Just physMeasures) c)
+                getNavData (NavData h d t r (Just physMeasures) go ea refs vi c)
+    4     -> do gyroOffsets <- getGyroOffsets
+                getNavData (NavData h d t r p (Just gyroOffsets) ea refs vi c)
+    5     -> do eulerAngles <- getEulerAngles
+                getNavData (NavData h d t r p go (Just eulerAngles) refs vi c)
+    6     -> do references <- getReferences
+                getNavData (NavData h d t r p go ea (Just references) vi c)
+    13    -> do vision <- getVision
+                getNavData (NavData h d t r p go ea refs (Just vision) c)
     65535 -> do cks <- getCheckSum
-                return (NavData h d t r p (Just cks))
+                return (NavData h d t r p go ea refs vi (Just cks))
     _     -> do skip (fromIntegral size - 4)
                 getNavData nd
+
+getVision :: Get Vision
+getVision = do
+  state <- getWord32le
+  misc <- getInt32le
+  phiTrim <- getFloatle
+  phiProp <- getFloatle
+  thetaTrim <- getFloatle
+  thetaProp <- getFloatle
+  newRawPicture <- getInt32le
+  capTheta <- getFloatle
+  capPhi <- getFloatle
+  capPsi <- getFloatle
+  capAlt <- getInt32le
+  time <- getWord32le
+  bodyVX <- getFloatle
+  bodyVY <- getFloatle
+  bodyVZ <- getFloatle
+  deltaPhi <- getFloatle
+  deltaTheta <- getFloatle
+  deltaPsi <- getFloatle
+  goldDef <- getWord32le
+  goldReset <- getWord32le
+  goldX <- getFloatle
+  goldY <- getFloatle
+  return (Vision state (fromIntegral misc) phiTrim phiProp thetaTrim thetaProp (fromIntegral newRawPicture) capTheta capPhi capPsi (fromIntegral capAlt) time (Vector bodyVX bodyVY bodyVZ) (Vector deltaPhi deltaTheta deltaPsi) goldDef goldReset goldX goldY)
+
+
+getReferences :: Get References
+getReferences = do
+  theta <- getInt32le
+  phi <- getInt32le
+  thetaI <- getInt32le
+  phiI <- getInt32le
+  pitch <- getInt32le
+  roll <- getInt32le
+  yaw <- getInt32le
+  psi <- getInt32le
+  vx <- getFloatle
+  vy <- getFloatle
+  thetaMod <- getFloatle
+  phiMod <- getFloatle
+  kVX <- getFloatle
+  kVY <- getFloatle
+  kMode <- getInt32le
+  uiTime <- getFloatle
+  uiTheta <- getFloatle
+  uiPhi <- getFloatle
+  uiPsi <- getFloatle
+  uiPsiAccuracy <- getFloatle
+  uiSeq <- getInt32le
+  return (References (fromIntegral theta) (fromIntegral phi) (fromIntegral thetaI) (fromIntegral phiI) (fromIntegral pitch) (fromIntegral roll) (fromIntegral yaw) (fromIntegral psi) vx vy thetaMod phiMod kVX kVY (fromIntegral kMode) uiTime uiTheta uiPhi uiPsi uiPsiAccuracy (fromIntegral uiSeq))
+
+getEulerAngles :: Get EulerAngles
+getEulerAngles = do
+  theta <- getFloatle
+  phi <- getFloatle
+  return (EulerAngles theta phi)
+
+getGyroOffsets :: Get GyroOffsets
+getGyroOffsets = do
+  x <- getFloatle
+  y <- getFloatle
+  z <- getFloatle
+  return (GyroOffsets (Vector x y z))
 
 getRawMeassures :: Get RawMeassures
 getRawMeassures = do
@@ -149,15 +286,18 @@ getPhysMeasures = do
   _ <- getInt32le   -- drop accelerometer temperature
   _ <- getInt16le   -- drop gyroscope temperature
   xa <- getFloatle
+  let xa_ = xa/1000*9.81
   ya <- getFloatle
+  let ya_ = ya/1000*9.81
   za <- getFloatle
+  let za_ = za/1000*9.81
   xg <- getFloatle
   yg <- getFloatle
   zg <- getFloatle
   _ <- getWord32le  -- drop alim3V3
   _ <- getWord32le  -- drop vrefEpson
   _ <- getWord32le  -- drop vrefIDG
-  return (PhysMeasures (Vector xa ya za) (Vector xg yg zg))
+  return (PhysMeasures (Vector xa_ ya_ za_) (Vector xg yg zg))
 
 getDemoData :: Get DemoData
 getDemoData = do

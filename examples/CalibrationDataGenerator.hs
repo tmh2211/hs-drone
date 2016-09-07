@@ -54,6 +54,7 @@ droneCommunication session = do
     ensureOrientation orientation RightSideDown
     y <- calculateAvgVector
     let vlist = [(vectorToList x), (vectorToList y), (vectorToList z)]
+    liftIO $ putStrLn $ show vlist
     let matrix = inverse $ transpose $ fromLists vlist
     return matrix
   case result of
@@ -67,7 +68,7 @@ waitForMainThread :: IORef ActiveThread -> Drone DroneOrientation
 waitForMainThread ref = do
   thread <- liftIO $ readIORef ref
   case thread of
-    Main -> do wait 0.1
+    Main -> do wait 0.02
                waitForMainThread ref
     Worker o -> return o
 
@@ -86,7 +87,6 @@ calculateAvgVector :: Drone Vector
 calculateAvgVector = do
   vs <- replicateM 1000 readAccVector
   let n = fromIntegral $ length vs
-  liftIO $ putStrLn $ show n
   let vecSum = foldr addVector (Vector 0 0 0) vs
   let vecResult = Vector ((x vecSum)/n) ((y vecSum)/n) ((z vecSum)/n)
   return vecResult
@@ -94,7 +94,6 @@ calculateAvgVector = do
 readAccVector :: Drone Vector
 readAccVector = do
   navData <- getNavData
-  --liftIO $ putStrLn $ show navData
   stayAlive
   let accVector = fromMaybe (Vector 0 0 0) $ accelerometers <$> physMeasures navData
   return accVector
