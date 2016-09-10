@@ -23,6 +23,7 @@ library
                        Robotics.ArDrone.NavDataParser,
                        Robotics.ArDrone.NavDataConstants,
                        Robotics.ArDrone.NavDataServer,
+                       Robotics.ArDrone.NavDataTypes,
                        Util.MatrixParser,
                        Control.Monad.Drone
   -- other-modules:
