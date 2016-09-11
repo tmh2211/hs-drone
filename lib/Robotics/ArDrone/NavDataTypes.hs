@@ -44,7 +44,7 @@ data Time = Time { droneTime :: Word32
                  } deriving (Show)
 
 --Datatype holding the raw meassurements of the drone sensors
-data RawMeassures = RawMeassures { accVector :: (Word16, Word16, Word16)
+data RawMeasures = RawMeasures { accVector :: (Word16, Word16, Word16)
                                  , gyroVector :: (Word16, Word16, Word16)
                                  , gyro110 :: ( Word16, Word16 )
                                  , batteryMilliVolt :: Word32
@@ -114,19 +114,53 @@ data Vision = Vision { viState :: Word32
                      , viGoldY :: Float
                      } deriving (Show)
 
+data Trims = Trims { tAngularRatesR :: Float
+                   , tEulerTheta :: Float
+                   , tEulerPhi :: Float
+                   } deriving (Show)
+
+data RcReferences = RcReferences { rcPitch :: Int
+                                 , rcRoll :: Int
+                                 , rcYaw :: Int
+                                 , rcGaz :: Int
+                                 , rcAg :: Int
+                                 } deriving (Show)
+
+data Pwm = Pwm { motors :: Word32
+               , satMotors :: Word32
+               , gazFeedForward :: Float
+               , gazAltitude :: Float
+               , altitudeIntegral :: Float
+               , vzRef :: Float
+               , uPitch :: Int
+               , uRoll :: Int
+               , uYaw :: Int
+               , yawUI :: Float
+               , uPitchPlanif :: Int
+               , uRollPlanif :: Int
+               , uYawPlanif :: Int
+               , uGazPlanif :: Float
+               , motorCurrents :: (Word16, Word16, Word16, Word16)
+               , altitudeProp :: Float
+               , altitudeDer :: Float
+               } deriving (Show)
+
 data CheckSum = CheckSum { value :: Word32 } deriving (Show)
 
 data NavData = NavData { navDataHeader :: Maybe Header
                        , demoData :: Maybe DemoData
                        , time :: Maybe Time
-                       , rawMeassures :: Maybe RawMeassures
+                       , rawMeasures :: Maybe RawMeasures
                        , physMeasures :: Maybe PhysMeasures
                        , gyroOffsets :: Maybe GyroOffsets
                        , eulerAngles :: Maybe EulerAngles
                        , references :: Maybe References
+                       , trims :: Maybe Trims
+                       , rcReferences :: Maybe RcReferences
+                       , pwm :: Maybe Pwm
                        , vision :: Maybe Vision
-                       , cks :: Maybe CheckSum
+                       , checkSum :: Maybe CheckSum
                        } deriving (Show)
 
 emptyNavData :: NavData
-emptyNavData = NavData Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
+emptyNavData = NavData Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing

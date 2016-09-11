@@ -17,31 +17,32 @@ import Robotics.ArDrone.NavDataTypes
 parseNavData :: Get NavData
 parseNavData = do
   header <- getHeader
-  getNavData (NavData (Just header) Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing)
+  let empty = emptyNavData
+  getNavData (empty { navDataHeader = Just header})
 
 getNavData :: NavData -> Get NavData
-getNavData nd@(NavData h d t r p go ea refs vi c) = do
+getNavData nd = do
   id <- getWord16le
   size <- getWord16le
   case id of
-    0     -> do demoData <- getDemoData
-                getNavData (NavData h (Just demoData) t r p go ea refs vi c)
-    1     -> do time <- getTime
-                getNavData (NavData h d (Just time) r p go ea refs vi c)
-    2     -> do rawMeassures <- getRawMeassures
-                getNavData (NavData h d t (Just rawMeassures) p go ea refs vi c)
-    3     -> do physMeasures <- getPhysMeasures
-                getNavData (NavData h d t r (Just physMeasures) go ea refs vi c)
-    4     -> do gyroOffsets <- getGyroOffsets
-                getNavData (NavData h d t r p (Just gyroOffsets) ea refs vi c)
-    5     -> do eulerAngles <- getEulerAngles
-                getNavData (NavData h d t r p go (Just eulerAngles) refs vi c)
-    6     -> do references <- getReferences
-                getNavData (NavData h d t r p go ea (Just references) vi c)
-    13    -> do vision <- getVision
-                getNavData (NavData h d t r p go ea refs (Just vision) c)
+    0     -> do dd <- getDemoData
+                getNavData (nd { demoData = Just dd })
+    1     -> do t <- getTime
+                getNavData (nd { time = Just t })
+    2     -> do rm <- getRawMeassures
+                getNavData (nd { rawMeasures = Just rm })
+    3     -> do pm <- getPhysMeasures
+                getNavData (nd { physMeasures = Just pm })
+    4     -> do go <- getGyroOffsets
+                getNavData (nd { gyroOffsets = Just go })
+    5     -> do ea <- getEulerAngles
+                getNavData (nd { eulerAngles = Just ea })
+    6     -> do refs <- getReferences
+                getNavData (nd { references = Just refs })
+    13    -> do vis <- getVision
+                getNavData (nd { vision = Just vis })
     65535 -> do cks <- getCheckSum
-                return (NavData h d t r p go ea refs vi (Just cks))
+                return (nd { checkSum = Just cks })
     _     -> do skip (fromIntegral size - 4)
                 getNavData nd
 
@@ -110,7 +111,7 @@ getGyroOffsets = do
   z <- getFloatle
   return (GyroOffsets (Vector x y z))
 
-getRawMeassures :: Get RawMeassures
+getRawMeassures :: Get RawMeasures
 getRawMeassures = do
   accX <- getWord16le
   accY <- getWord16le
@@ -133,7 +134,7 @@ getRawMeassures = do
   echoSum <- getWord32le
   altTemp <- getWord32le
   gradient <- getWord16le
-  return (RawMeassures (accX, accY, accZ) (gyrX, gyrY, gyrZ) (gyr110X, gyr110Y) batteryMilliVolt usEchoStart usEchoEnd usEchoAssociation usEchoDistance usCurveTime usCurveValue usCurveRef echoFlagIni echoNum echoSum altTemp gradient)
+  return (RawMeasures (accX, accY, accZ) (gyrX, gyrY, gyrZ) (gyr110X, gyr110Y) batteryMilliVolt usEchoStart usEchoEnd usEchoAssociation usEchoDistance usCurveTime usCurveValue usCurveRef echoFlagIni echoNum echoSum altTemp gradient)
 
 getTime :: Get Time
 getTime = do
