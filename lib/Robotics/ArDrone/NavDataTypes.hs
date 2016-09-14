@@ -3,6 +3,11 @@ module Robotics.ArDrone.NavDataTypes where
 import Data.Matrix
 import Data.Word
 
+data Eulers = Eulers { phi :: Float
+                     , theta :: Float
+                     , psi :: Float
+                     } deriving (Show)
+
 data Vector = Vector { x :: Float
                      , y :: Float
                      , z :: Float
@@ -18,19 +23,12 @@ vectorToMatrix (Vector x y z) = fromLists [[x],[y],[z]]
 --Datatype holding the important data from the the demo_data struct
 data DemoData = DemoData { flyState :: Word32
                          , batteryPercentage :: Word32
-                         , theta :: Float
-                         , phi :: Float
-                         , psi :: Float
-                         , altitude :: Word32
-                         , velocity :: Vector
+                         , demoTheta :: Float
+                         , demoPhi :: Float
+                         , demoPsi :: Float
+                         , demoAltitude :: Word32
+                         , demoVelocity :: Vector
                          } deriving (Show)
-
-
---Datatype holding the importtant values from the phys_measures struct
---accelerometer in m/s^2
-data PhysMeasures = PhysMeasures { accelerometers :: Vector
-                                 , gyroscopes :: Vector
-                                 } deriving (Show)
 
 --Navdata package header
 data Header = Header { header :: Word32
@@ -60,6 +58,12 @@ data RawMeasures = RawMeasures { accVector :: (Word16, Word16, Word16)
                                  , echoSum :: Word32
                                  , altTemp :: Word32
                                  , gradient :: Word16
+                                 } deriving (Show)
+
+--Datatype holding the importtant values from the phys_measures struct
+--accelerometer in m/s^2
+data PhysMeasures = PhysMeasures { accelerometers :: Vector
+                                 , gyroscopes :: Vector
                                  } deriving (Show)
 
 --Datatype holding information about the offsets of the gyroscope
@@ -94,26 +98,6 @@ data References = References { refTheta :: Int
                              , refUiSeq :: Int
                              } deriving (Show)
 
-data Vision = Vision { viState :: Word32
-                     , viMisc :: Int
-                     , viPhiTrim :: Float
-                     , viPhiRefProp :: Float
-                     , viThetaTrim :: Float
-                     , viThetaProp :: Float
-                     , newRawPicture :: Int
-                     , viCaptureTheta :: Float
-                     , viCapturePhi :: Float
-                     , viCapturePsi :: Float
-                     , viCaptureAltitude :: Int
-                     , viCaptureTime :: Word32
-                     , viBodyV :: Vector
-                     , viDelta :: Vector
-                     , viGoldDefined :: Word32
-                     , viGoldReset :: Word32
-                     , viGoldX :: Float
-                     , viGoldY :: Float
-                     } deriving (Show)
-
 data Trims = Trims { tAngularRatesR :: Float
                    , tEulerTheta :: Float
                    , tEulerPhi :: Float
@@ -145,6 +129,54 @@ data Pwm = Pwm { motors :: Word32
                , altitudeDer :: Float
                } deriving (Show)
 
+data Altitude = Altitude { altVision :: Int
+                         , altVel :: Float
+                         , altRef :: Int
+                         , altRaw :: Int
+                         , altObsAcc :: Float
+                         , altObsAlt :: Float
+                         , altObsX :: Vector
+                         , altObsState :: Word32
+                         , altEstVb :: (Float, Float)
+                         , altEstState :: Word32
+                         } deriving (Show)
+
+data VisionRaw = VisionRaw { vrTx :: Float
+                           , vrTy :: Float
+                           , vrTz :: Float
+                           } deriving (Show)
+
+data VisionOf = VisionOf { voDx :: (Float, Float, Float, Float, Float)
+                         , voDy :: (Float, Float, Float, Float, Float)
+                         } deriving (Show)
+
+data Vision = Vision { viState :: Word32
+                     , viMisc :: Int
+                     , viPhiTrim :: Float
+                     , viPhiRefProp :: Float
+                     , viThetaTrim :: Float
+                     , viThetaProp :: Float
+                     , newRawPicture :: Int
+                     , viEulerAngles :: Eulers
+                     , viCaptureAltitude :: Int
+                     , viCaptureTime :: Word32
+                     , viBodyV :: Vector
+                     , viDelta :: Vector
+                     , viGoldDefined :: Word32
+                     , viGoldReset :: Word32
+                     , viGoldX :: Float
+                     , viGoldY :: Float
+                     } deriving (Show)
+
+data VisionPerf = VisionPerf { vpSzo :: Float
+                             , vpCorners :: Float
+                             , vpCompute :: Float
+                             , vpTracking :: Float
+                             , vpTrans :: Float
+                             , vpUpdate :: Float
+                             , custom :: [Float]
+                             } deriving (Show)
+
 data CheckSum = CheckSum { value :: Word32 } deriving (Show)
 
 data NavData = NavData { navDataHeader :: Maybe Header
@@ -158,9 +190,13 @@ data NavData = NavData { navDataHeader :: Maybe Header
                        , trims :: Maybe Trims
                        , rcReferences :: Maybe RcReferences
                        , pwm :: Maybe Pwm
+                       , altitude :: Maybe Altitude
+                       , visionRaw :: Maybe VisionRaw
+                       , visionOf :: Maybe VisionOf
                        , vision :: Maybe Vision
+                       , visionPerf :: Maybe VisionPerf
                        , checkSum :: Maybe CheckSum
                        } deriving (Show)
 
 emptyNavData :: NavData
-emptyNavData = NavData Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
+emptyNavData = NavData Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing

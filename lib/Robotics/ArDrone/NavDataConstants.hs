@@ -2,8 +2,8 @@ module Robotics.ArDrone.NavDataConstants where
 
 data NavDataOption = DEMO
                     | TIME
-                    | RAW_MEASSURES
-                    | PHYS_MEASSURES
+                    | RAW_MEASURES
+                    | PHYS_MEASURES
                     | GYROS_OFFSETS
                     | EULER_ANGLES
                     | REFERENCES
@@ -33,8 +33,8 @@ data NavDataOption = DEMO
 optionToInt :: NavDataOption -> Int
 optionToInt DEMO = 0
 optionToInt TIME = 1
-optionToInt RAW_MEASSURES = 2
-optionToInt PHYS_MEASSURES = 3
+optionToInt RAW_MEASURES = 2
+optionToInt PHYS_MEASURES = 3
 optionToInt GYROS_OFFSETS = 4
 optionToInt EULER_ANGLES = 5
 optionToInt REFERENCES = 6

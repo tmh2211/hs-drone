@@ -14,7 +14,8 @@ runServer navSocket currentPacket = do
   msg <- NBS.recv navSocket 4096
   let navData = runGetOrFail parseNavData $ fromStrict msg
   case navData of
-    Left (_, _, s) -> do putStrLn s
-                         writeIORef currentPacket Nothing
+    Left x -> do
+      putStrLn $ show x
+      writeIORef currentPacket Nothing
     Right (_, _, n) -> writeIORef currentPacket $ Just n
   runServer navSocket currentPacket

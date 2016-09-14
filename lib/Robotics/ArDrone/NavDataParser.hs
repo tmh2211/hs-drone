@@ -2,8 +2,6 @@ module Robotics.ArDrone.NavDataParser
 ( parseNavData
 , runGet
 , BS.fromStrict
-, emptyNavData
-, vectorToMatrix
 , module Robotics.ArDrone.NavDataTypes
 ) where
 
@@ -39,12 +37,120 @@ getNavData nd = do
                 getNavData (nd { eulerAngles = Just ea })
     6     -> do refs <- getReferences
                 getNavData (nd { references = Just refs })
+    7     -> do ts <- getTrims
+                getNavData (nd { trims = Just ts })
+    8     -> do rcrefs <- getRcReferences
+                getNavData (nd { rcReferences = Just rcrefs })
+    9     -> do pwm_ <- getPwm
+                getNavData (nd { pwm = Just pwm_ })
+    10    -> do alt <- getAltitude
+                getNavData (nd { altitude = Just alt })
+    11    -> do vr <- getVisionRaw
+                getNavData (nd { visionRaw = Just vr })
+    12    -> do vo <- getVisionOf
+                getNavData (nd { visionOf = Just vo })
     13    -> do vis <- getVision
                 getNavData (nd { vision = Just vis })
+    14    -> do vperf <- getVisionPerf
+                getNavData (nd { visionPerf = Just vperf })
     65535 -> do cks <- getCheckSum
                 return (nd { checkSum = Just cks })
     _     -> do skip (fromIntegral size - 4)
                 getNavData nd
+
+getVisionPerf :: Get VisionPerf
+getVisionPerf = do
+  szo <- getFloatle
+  corners <- getFloatle
+  compute <- getFloatle
+  tracking <- getFloatle
+  trans <- getFloatle
+  update <- getFloatle
+  skip 80
+  return $ VisionPerf szo corners compute tracking trans update []
+
+getVisionOf :: Get VisionOf
+getVisionOf = do
+  voDx1 <- getFloatle
+  voDx2 <- getFloatle
+  voDx3 <- getFloatle
+  voDx4 <- getFloatle
+  voDx5 <- getFloatle
+  let voDx = (voDx1, voDx2, voDx3, voDx4, voDx5)
+  voDy1 <- getFloatle
+  voDy2 <- getFloatle
+  voDy3 <- getFloatle
+  voDy4 <- getFloatle
+  voDy5 <- getFloatle
+  let voDy = (voDy1, voDy2, voDy3, voDy4, voDy5)
+  return $ VisionOf voDx voDy
+
+getVisionRaw :: Get VisionRaw
+getVisionRaw = do
+  tx <- getFloatle
+  ty <- getFloatle
+  tz <- getFloatle
+  return $ VisionRaw tx ty tz
+
+getAltitude :: Get Altitude
+getAltitude = do
+  vision <- getInt
+  vel <- getFloatle
+  ref <- getInt
+  raw <- getInt
+  obsAcc <- getFloatle
+  obsAlt <- getFloatle
+  obsXx <- getFloatle
+  obsXy <- getFloatle
+  obsXz <- getFloatle
+  let obsX = Vector obsXx obsXy obsXz
+  obsState <- getWord32le
+  estVb1 <- getFloatle
+  estVb2 <- getFloatle
+  let estVb = (estVb1, estVb2)
+  estState <- getWord32le
+  return $ Altitude vision vel ref raw obsAcc obsAlt obsX obsState estVb estState
+
+--TODO: Not working find out why and fix it
+getPwm :: Get Pwm
+getPwm = do
+  motors <- getWord32le
+  satMotors <- getWord32le
+  gazFeedForward <- getFloatle
+  gazAltitude <- getFloatle
+  altitudeIntegral <- getFloatle
+  vzRef <- getFloatle
+  upitch <- getInt
+  uroll <- getInt
+  uyaw <- getInt
+  yawUI <- getFloatle
+  uPitchPlanif <- getInt
+  uRollPlanif <- getInt
+  uYawPlanif <- getInt
+  uGazPlanif <- getFloatle
+  motorCurrents1 <- getWord16le
+  motorCurrents2 <- getWord16le
+  motorCurrents3 <- getWord16le
+  motorCurrents4 <- getWord16le
+  altitudeProp <- getFloatle
+  altitudeDer <- getFloatle
+  return (Pwm motors satMotors gazFeedForward gazAltitude altitudeIntegral vzRef upitch uroll uyaw yawUI uPitchPlanif uRollPlanif uYawPlanif uGazPlanif (motorCurrents1, motorCurrents2, motorCurrents3, motorCurrents4) altitudeProp altitudeDer)
+
+getRcReferences :: Get RcReferences
+getRcReferences = do
+  pitch <- getInt32le
+  roll <- getInt32le
+  yaw <- getInt32le
+  gaz <- getInt32le
+  ag <- getInt32le
+  return (RcReferences (fromIntegral pitch) (fromIntegral roll) (fromIntegral yaw) (fromIntegral gaz) (fromIntegral ag))
+
+getTrims :: Get Trims
+getTrims = do
+  angularRate <- getFloatle
+  theta <- getFloatle
+  phi <- getFloatle
+  return (Trims angularRate theta phi)
 
 getVision :: Get Vision
 getVision = do
@@ -54,10 +160,11 @@ getVision = do
   phiProp <- getFloatle
   thetaTrim <- getFloatle
   thetaProp <- getFloatle
-  newRawPicture <- getInt32le
+  newRawPicture <- getInt
   capTheta <- getFloatle
   capPhi <- getFloatle
   capPsi <- getFloatle
+  let euler = Eulers capPhi capTheta capPsi
   capAlt <- getInt32le
   time <- getWord32le
   bodyVX <- getFloatle
@@ -70,7 +177,7 @@ getVision = do
   goldReset <- getWord32le
   goldX <- getFloatle
   goldY <- getFloatle
-  return (Vision state (fromIntegral misc) phiTrim phiProp thetaTrim thetaProp (fromIntegral newRawPicture) capTheta capPhi capPsi (fromIntegral capAlt) time (Vector bodyVX bodyVY bodyVZ) (Vector deltaPhi deltaTheta deltaPsi) goldDef goldReset goldX goldY)
+  return (Vision state (fromIntegral misc) phiTrim phiProp thetaTrim thetaProp newRawPicture euler (fromIntegral capAlt) time (Vector bodyVX bodyVY bodyVZ) (Vector deltaPhi deltaTheta deltaPsi) goldDef goldReset goldX goldY)
 
 
 getReferences :: Get References
@@ -211,3 +318,8 @@ getCheckSum :: Get CheckSum
 getCheckSum = do
   value <- getWord32le
   return (CheckSum value)
+
+getInt :: Get Int
+getInt = do
+  int <- getInt32le
+  return $ fromIntegral int

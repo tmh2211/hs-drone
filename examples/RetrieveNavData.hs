@@ -22,7 +22,9 @@ mainLoop = do
   let opt = vision nd
   case opt of
     Nothing -> return ()
-    Just v -> liftIO $ putStrLn $ (show (viCaptureTheta v) ++ "\t" ++ show (viCapturePhi v) ++ "\t" ++ show (viCapturePsi v))
+    Just v -> do
+      let euler = viEulerAngles v
+      liftIO $ putStrLn $ show euler
   --liftIO $ print nd
   wait 0.1
   mainLoop

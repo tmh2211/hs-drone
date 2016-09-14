@@ -20,7 +20,6 @@ import Robotics.ArDrone.NavDataConstants
 import Robotics.ArDrone.NavDataServer
 import Util.MatrixParser
 
-maxListenQueue = 1
 droneIp="192.168.1.1"
 navPort=5554
 ctrlPort=5556
@@ -108,7 +107,7 @@ initNavaData :: Drone ()
 initNavaData = do
   cmd $ AtCtrl 5 0
   cmd $ AtConfig "general:navdata_demo" "FALSE"
-  configureNavDataOptions [PHYS_MEASSURES]
+  configureNavDataOptions [DEMO]
   cmd $ AtCtrl 5 0
 
 inc :: Drone ()
