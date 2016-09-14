@@ -98,11 +98,11 @@ toAtCommand msg =
      Clockwise speed -> AtPCmd True 0 0 0 speed
      CounterClockwise speed -> AtPCmd True 0 0 0 (-speed)
 
-     Front speed -> AtPCmd True 0 (-speed) 0 0
-     Back speed -> AtPCmd True 0 speed 0 0
+     Front speed -> AtPCmd True 0 (-speed) 0 0 0
+     Back speed -> AtPCmd True 0 speed 0 0 0
 
-     MoveLeft speed -> AtPCmd True 0 speed 0 0
-     MoveRight speed -> AtPCmd True 0 (-speed) 0 0
+     MoveLeft speed -> AtPCmd True speed 0 0 0
+     MoveRight speed -> AtPCmd True (-speed) 0 0 0
 
      Stop -> AtPCmd False 0 0 0 0
 

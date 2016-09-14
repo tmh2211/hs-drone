@@ -23,7 +23,7 @@ mainLoop = do
   case opt of
     Nothing -> return ()
     Just v -> do
-      let euler = viEulerAngles v
+      let euler = viBodyV v
       liftIO $ putStrLn $ show euler
   --liftIO $ print nd
   wait 0.1

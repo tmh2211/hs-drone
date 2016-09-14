@@ -12,7 +12,7 @@ import Robotics.ArDrone.NavDataParser
 import Robotics.ArDrone.NavDataConstants
 
 dt = 0.5 :: Float
-x0 = 2 :: Float
+x0 = 0.05 :: Float
 
 mySumFrom :: (Num a, Monad m) => a -> MStreamF m a a
 mySumFrom a = arr Sum >>> sumFrom (Sum a) >>> arr getSum
@@ -28,7 +28,7 @@ main = do
     initNavaData
     configureNavDataOptions [PHYS_MEASURES, VISION]
     matrix <- gets calibrationMatrix
-    --takeOff
+    takeOff
     reactimate $ proc () -> do
       navData <- liftMStreamF_ getNavData -< ()
       let accVector = vectorToMatrix $ fromMaybe (Vector 0 0 0) $ accelerometers <$> physMeasures navData
@@ -37,11 +37,17 @@ main = do
       let calibAccVector = multStd rotMatrix (multStd matrix accVector)
       let accX = getElem 1 1 calibAccVector
       posX <- integralFrom 0 <<< integralFrom 0 -< accX
-      _ <- liftMStreamF $ liftIO . putStrLn -< show eulerAngles
-      _ <- liftMStreamF $ liftIO . putStrLn -< show posX ++ "\t" ++ show (getElem 1 1 calibAccVector) ++ "\t" ++  show (getElem 2 1 calibAccVector) ++ "\t" ++show (getElem 3 1 calibAccVector)
-      if abs posX > x0 then liftMStreamF_ land -< () else do
-        liftMStreamF flyForward -< 0.01
-        liftMStreamF wait -< dt
+      --_ <- liftMStreamF $ liftIO . putStrLn -< show eulerAngles
+      --_ <- liftMStreamF $ liftIO . putStrLn -< show posX ++ "\t" ++ show (getElem 1 1 calibAccVector) ++ "\t" ++  show (getElem 2 1 calibAccVector) ++ "\t" ++show (getElem 3 1 calibAccVector)
+      _ <- liftMStreamF $ liftIO . putStrLn -< show accX
+      --_ <- liftMStreamF $ liftIO . putStrLn -< show posX
+      if abs posX > x0
+        then do
+          liftMStreamF flyBackwards -< 0.01
+          liftMStreamF wait -< dt
+        else do
+          liftMStreamF flyForward -< 0.01
+          liftMStreamF wait -< dt
   return ()
 
 createRotationMatrix :: Eulers -> Matrix Float
