@@ -9,6 +9,7 @@ import Data.Monoid
 import Data.IORef
 import Control.Monad.Except
 import Data.Matrix
+import Data.VectorSpace
 
 import Control.Monad.Drone
 import Robotics.ArDrone.NavDataParser
@@ -87,7 +88,7 @@ calculateAvgVector :: Drone Vector
 calculateAvgVector = do
   vs <- replicateM 1000 readAccVector
   let n = fromIntegral $ length vs
-  let vecSum = foldr addVector (Vector 0 0 0) vs
+  let vecSum = foldr (^+^) (Vector 0 0 0) vs
   let vecResult = Vector ((x vecSum)/n) ((y vecSum)/n) ((z vecSum)/n)
   return vecResult
 
