@@ -14,14 +14,16 @@ import Data.IORef
 import Data.Matrix
 import Control.Monad.Except
 
-import Robotics.ArDrone.Control
+import Robotics.ArDrone.Control hiding (runDrone)
 import Robotics.ArDrone.NavDataParser
 import Robotics.ArDrone.NavDataConstants
 import Robotics.ArDrone.NavDataServer
+import Robotics.ArDrone.VideoStreamServer
 import Util.MatrixParser
 
 droneIp="192.168.1.1"
 navPort=5554
+videoPort = 5555
 ctrlPort=5556
 byte = BS.singleton ( 1 :: Word8)
 
@@ -32,6 +34,7 @@ data DroneState = DroneState { seqNr :: Integer
                              , ctrlSocket :: Socket
                              , calibrationMatrix :: Matrix Float
                              , currentPacket :: IORef (Maybe NavData)
+                             , imgBytes :: IORef (Maybe BS.ByteString)
                              }
 
 
@@ -165,4 +168,7 @@ runDrone d = do
 
   !matrix <- readMatrixFromFile "calibData.txt"
 
-  evalStateT (runExceptT d) (DroneState 0 (AtCtrl 5 0) ctrlSocket matrix currentPacket)
+  lastFrame <- newIORef Nothing
+  forkIO $ runVideoServer lastFrame
+
+  evalStateT (runExceptT d) (DroneState 0 (AtCtrl 5 0) ctrlSocket matrix currentPacket lastFrame)

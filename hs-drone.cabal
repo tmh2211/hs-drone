@@ -24,6 +24,8 @@ library
                        Robotics.ArDrone.NavDataConstants,
                        Robotics.ArDrone.NavDataServer,
                        Robotics.ArDrone.NavDataTypes,
+                       Robotics.ArDrone.VideoStreamServer,
+                       Robotics.ArDrone.PaVEParser,
                        Util.MatrixParser,
                        Control.Monad.Drone
   -- other-modules:
@@ -34,7 +36,10 @@ library
                        bytestring >= 0.10,
                        binary >= 0.8.4,
                        mtl >= 2.2,
-                       matrix >= 0.3.5
+                       matrix >= 0.3.5,
+                       system-command >= 0.0.10,
+                       JuicyPixels >= 3.2.7,
+                       opencv == 0.0.0
   -- hs-source-dirs:
   default-language:    Haskell2010
 
@@ -76,3 +81,12 @@ executable CalibrationDataGenerator
                        dunai >= 0.1,
                        matrix >= 0.3.5
   main-is:             CalibrationDataGenerator.hs
+
+executable VideoStream
+  HS-source-dirs:      examples
+  build-depends:       hs-drone,
+                       base >=4.7,
+                       mtl >= 2.2,
+                       dunai >= 0.1,
+                       matrix >= 0.3.5
+  main-is:             VideoStream.hs

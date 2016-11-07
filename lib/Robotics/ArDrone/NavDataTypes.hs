@@ -177,6 +177,10 @@ data VisionPerf = VisionPerf { vpSzo :: Float
                              , custom :: [Float]
                              } deriving (Show)
 
+data TrackersSend = TrackersSend { locked :: [Int]
+                                 , point :: [(Float, Float)]
+                                 } deriving (Show)
+
 data CheckSum = CheckSum { value :: Word32 } deriving (Show)
 
 data NavData = NavData { navDataHeader :: Maybe Header
@@ -195,8 +199,9 @@ data NavData = NavData { navDataHeader :: Maybe Header
                        , visionOf :: Maybe VisionOf
                        , vision :: Maybe Vision
                        , visionPerf :: Maybe VisionPerf
+                       , trackersSend :: Maybe TrackersSend
                        , checkSum :: Maybe CheckSum
                        } deriving (Show)
 
 emptyNavData :: NavData
-emptyNavData = NavData Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
+emptyNavData = NavData Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing

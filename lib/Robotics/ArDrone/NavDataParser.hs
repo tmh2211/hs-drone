@@ -9,6 +9,7 @@ import qualified Data.ByteString.Lazy as BS
 import Data.Binary.Get
 import Data.Word
 import Data.Matrix
+import Control.Monad
 
 import Robotics.ArDrone.NavDataTypes
 
@@ -53,10 +54,21 @@ getNavData nd = do
                 getNavData (nd { vision = Just vis })
     14    -> do vperf <- getVisionPerf
                 getNavData (nd { visionPerf = Just vperf })
+    15    -> do tSend <- getTrackersSend
+                getNavData (nd { trackersSend = Just tSend })
     65535 -> do cks <- getCheckSum
                 return (nd { checkSum = Just cks })
     _     -> do skip (fromIntegral size - 4)
                 getNavData nd
+
+getTrackersSend :: Get TrackersSend
+getTrackersSend = do
+  locked <- replicateM 30 getInt
+  point <- replicateM 30 $ do
+    x <- getFloatle
+    y <- getFloatle
+    return (x, y)
+  return $ TrackersSend locked point
 
 getVisionPerf :: Get VisionPerf
 getVisionPerf = do
