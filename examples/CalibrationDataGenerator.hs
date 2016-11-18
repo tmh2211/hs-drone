@@ -13,36 +13,40 @@ import Data.VectorSpace
 
 import Control.Monad.Drone
 import Robotics.ArDrone.NavDataParser
+import Robotics.ArDrone.NavDataConstants
 import Util.MatrixParser
 
 data DroneOrientation = BottomDown | CameraDown | RightSideDown deriving (Eq)
 
 data ActiveThread = Main | Worker DroneOrientation
 
+m1 = "Put the drone on a level surface and leave it there. Press enter."
+m2 = "Now put the drone in a stable position with the camera facing downwoards. Press enter."
+m3 = "Now put the drone in a stable position with right hand side of the drone [from the drones point pov] facing downwoards. Press enter."
+m4 = "Now wait while the calibration data is calculated."
+m5 = "Thanks for your patience."
 
 main :: IO ()
 main = do
   ref <- newIORef Main
   forkIO $ droneCommunication ref
-  putStrLn "Put the drone on a level surface and leave it there. Press enter key."
+  mapM_ communicationProtocol [(ref, Worker BottomDown, m1), (ref, Worker CameraDown, m2), (ref, Worker RightSideDown, m3)]
+  putStrLn m4
+  waitForWorkerThread ref
+  putStrLn m5
+
+communicationProtocol :: (IORef ActiveThread, ActiveThread, String) -> IO ()
+communicationProtocol (ref, (Worker orientation), s) = do
+  putStrLn s
   _ <- getLine
-  writeIORef ref $ Worker BottomDown
+  writeIORef ref $ (Worker orientation)
   waitForWorkerThread ref
-  putStrLn "Now put the drone in a stable position with the camera facing downwoards. Press enter."
-  _ <-  getLine
-  writeIORef ref $ Worker CameraDown
-  waitForWorkerThread ref
-  putStrLn "Now put the drone in a stable position with right hand side of the drone [from the drones point pov] facing downwoards. Press enter."
-  _ <- getLine
-  writeIORef ref $ Worker RightSideDown
-  putStrLn "Now wait while the calibration data is calculated."
-  waitForWorkerThread ref
-  putStrLn "Thanks for your patience."
 
 droneCommunication :: IORef ActiveThread -> IO ()
 droneCommunication session = do
   result <- runDrone $ do
     initNavaData
+    configureNavDataOptions [PHYS_MEASURES]
     orientation <- waitForMainThread session
     ensureOrientation orientation BottomDown
     z <- calculateAvgVector
@@ -54,9 +58,11 @@ droneCommunication session = do
     orientation <- waitForMainThread session
     ensureOrientation orientation RightSideDown
     y <- calculateAvgVector
-    let vlist = [(vectorToList x), (vectorToList y), (vectorToList z)]
+    let vlist = map vectorToList [x, y, z]
     liftIO $ putStrLn $ show vlist
+    liftIO $ putStrLn "Works"
     let matrix = inverse $ transpose $ fromLists vlist
+    liftIO $ putStrLn $ show matrix
     return matrix
   case result of
     Left e -> liftIO $ putStrLn $ show e
@@ -88,7 +94,7 @@ calculateAvgVector :: Drone Vector
 calculateAvgVector = do
   vs <- replicateM 1000 readAccVector
   let n = fromIntegral $ length vs
-  let vecSum = foldr (^+^) (Vector 0 0 0) vs
+  let vecSum = foldr addVector (Vector 0 0 0) vs
   let vecResult = Vector ((x vecSum)/n) ((y vecSum)/n) ((z vecSum)/n)
   return vecResult
 

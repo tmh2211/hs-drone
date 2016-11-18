@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeFamilies #-}
+--{-# LANGUAGE TypeFamilies #-}
 
 module Robotics.ArDrone.NavDataTypes where
 
@@ -16,14 +16,14 @@ data Vector = Vector { x :: Float
                      , z :: Float
                      } deriving (Show, Read)
 
-instance RModule Vector where
-  type Groundring Vector = Float
-  zeroVector = Vector 0 0 0
-  (*^) n (Vector a b c) = Vector (n*a) (n*b) (n*c)
-  (^+^) (Vector a b c) (Vector d e f) = Vector (a+d) (b+e) (c+f)
+--instance RModule Vector where
+--  type Groundring Vector = Float
+--  zeroVector = Vector 0 0 0
+--  (*^) n (Vector a b c) = Vector (n*a) (n*b) (n*c)
+--  (^+^) (Vector a b c) (Vector d e f) = Vector (a+d) (b+e) (c+f)
 
-instance VectorSpace Vector where
-  
+--instance VectorSpace Vector where
+--
 
 instance Monoid Vector where
   mempty = Vector 0 0 0
