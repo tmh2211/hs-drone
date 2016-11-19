@@ -5,6 +5,7 @@ module Robotics.ArDrone.NavDataTypes where
 import Data.Matrix
 import Data.Word
 import Data.VectorSpace
+import Data.Int
 
 data Eulers = Eulers { phi :: Float
                      , theta :: Float
@@ -193,6 +194,130 @@ data TrackersSend = TrackersSend { locked :: [Int]
                                  , point :: [(Float, Float)]
                                  } deriving (Show)
 
+data VisionDetect = VisionDetect { nbDetected :: Word32
+                                 , vdType :: [Word32]
+                                 , vdXc :: [Word32]
+                                 , vdYc :: [Word32]
+                                 , vdWidth :: [Word32]
+                                 , vdHeight :: [Word32]
+                                 , vdDist :: [Word32]
+                                 , vdOrientationAngle :: [Float]
+                                 , rotation :: [Matrix Float]
+                                 , translation :: [Vector]
+                                 , cameraSource :: [Word32]
+                                 } deriving (Show)
+
+data Watchdog = Watchdog { wd :: Word32 } deriving (Show)
+
+data AdcDataFrame = AdcDataFrame { adcVersion :: Word32
+                                 , adcFrame :: [Word8]
+                                 } deriving (Show)
+
+data VideoStream = VideoStream { vsQuant :: Word8
+                               , vsFrame :: (Word32, Word32)
+                               , vsAtcmd :: (Word32, Word32, Float, Word32)
+                               , vsBitrate :: (Word32, Word32)
+                               , vsData :: [Int]
+                               , tcpQueueLevel :: Word32
+                               , fifoQueueLevel :: Word32
+                               } deriving (Show)
+
+data Games = Games { counters :: (Word32, Word32) } deriving (Show)
+
+data PressureRaw = PressureRaw { prUp :: Int
+                               , prUt :: Word16
+                               , prTemperature :: Int16
+                               , prPressure :: Int
+                               } deriving (Show)
+
+data Magneto = Magneto { magMx :: Int16
+                       , magMy :: Int16
+                       , magMz :: Int16
+                       , magRaw :: Vector
+                       , magRectified :: Vector
+                       , magOffset :: Vector
+                       , magHeading :: (Float, Float, Float)
+                       , magOk :: Word8
+                       , magState :: Word32
+                       , magRadius :: Float
+                       , error :: (Float, Float)
+                       } deriving (Show)
+
+data WindSpeed = WindSpeed { wsSpeed :: Float
+                           , wsAngle :: Float
+                           , wsCompensation :: (Float, Float)
+                           , wsStateX :: [Float]
+                           , wsDebug :: [Float]
+                           } deriving (Show)
+
+data KalmanPressure = KalmanPressure { kpOffsetPressure :: Float
+                                     , kpAltitude :: Float
+                                     , kpVelocity :: Float
+                                     , kpAngle :: (Float, Float)
+                                     , kpUs :: (Float, Float)
+                                     , kpCovariance :: (Float, Float, Float)
+                                     , kpGroundEffect :: Word8
+                                     , kpSum :: Float
+                                     , kpReject :: Word8
+                                     , kpUMultisinus :: Float
+                                     , kpGazAltitude :: Float
+                                     , kpFlagMultisinus :: Word8
+                                     , kpFlagMultisinusStart :: Word8
+                                     } deriving (Show)
+
+data HDVideoStream = HDVideoStream { hdState :: Word32
+                                   , hdStorage :: (Word32, Word32)
+                                   , hdUsbkey :: (Word32, Word32)
+                                   , hdFrameNumber :: Word32
+                                   , hdUsbRemainingTime :: Word32
+                                   } deriving (Show)
+
+data Wifi = Wifi { wifiLinkQuality :: Float } deriving (Show)
+
+data SatChannel = SatChannel { scSat :: Word8
+                               , scCn0 :: Word8
+                               } deriving (Show)
+
+data Gps = Gps { latitude :: Double
+               , longitude :: Double
+               , elevation :: Double
+               , hdop :: Double
+               , gpsDataAvailable :: Int
+               , gpsZeroValidated :: Int
+               , gpsWptValidated :: Int
+               , lat0 :: Double
+               , lon0 :: Double
+               , latFuse :: Double
+               , lonFuse :: Double
+               , gpsState :: Word32
+               , xTraj :: Float
+               , xRef :: Float
+               , yTraj :: Float
+               , yRef :: Float
+               , thetaP :: Float
+               , phiP :: Float
+               , thetaI :: Float
+               , phiI :: Float
+               , thetaD :: Float
+               , phiD :: Float
+               , vdop :: Double
+               , pdop :: Double
+               , gpsSpeed :: Float
+               , lastFrameTimestamp :: Word32
+               , gpsDegreee :: Float
+               , gpsDegreeMag :: Float
+               , gpsEhpe :: Float
+               , gpsEhve :: Float
+               , c_n0 :: Float
+               , nbSatellites :: Word32
+               , gpsChannels :: [SatChannel]
+               , gpsPlugged :: Int
+               , gpsEphemerisStatus :: Word32
+               , pgsVxTraj :: Float
+               , gpsVyTraj :: Float
+               , gpsFirmwareStatus :: Word32
+               } deriving (Show)
+
 data CheckSum = CheckSum { value :: Word32 } deriving (Show)
 
 data NavData = NavData { navDataHeader :: Maybe Header
@@ -212,8 +337,20 @@ data NavData = NavData { navDataHeader :: Maybe Header
                        , vision :: Maybe Vision
                        , visionPerf :: Maybe VisionPerf
                        , trackersSend :: Maybe TrackersSend
+                       , visionDetect :: Maybe VisionDetect
+                       , watchdog :: Maybe Watchdog
+                       , adcDataFrame :: Maybe AdcDataFrame
+                       , videoStream :: Maybe VideoStream
+                       , games :: Maybe Games
+                       , pressureRaw :: Maybe PressureRaw
+                       , magneto :: Maybe Magneto
+                       , windSpeed :: Maybe WindSpeed
+                       , kalmanPressure :: Maybe KalmanPressure
+                       , hdVideoStream :: Maybe HDVideoStream
+                       , wifi :: Maybe Wifi
+                       , gps :: Maybe Gps
                        , checkSum :: Maybe CheckSum
                        } deriving (Show)
 
 emptyNavData :: NavData
-emptyNavData = NavData Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
+emptyNavData = NavData Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing 

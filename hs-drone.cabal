@@ -25,7 +25,6 @@ library
                        Robotics.ArDrone.NavDataServer,
                        Robotics.ArDrone.NavDataTypes,
                        Robotics.ArDrone.VideoStreamServer,
-                       Robotics.ArDrone.PaVEParser,
                        Util.MatrixParser,
                        Control.Monad.Drone
   -- other-modules:

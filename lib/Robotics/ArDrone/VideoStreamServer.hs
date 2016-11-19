@@ -11,8 +11,6 @@ import Data.Binary.Get
 import System.Command
 import Codec.Picture
 
-import Robotics.ArDrone.PaVEParser
-
 runVideoServer :: IORef (Maybe BS.ByteString) -> IO ()
 runVideoServer lastFrame = do
   path <- readNodejsPath "nodejs.config"
