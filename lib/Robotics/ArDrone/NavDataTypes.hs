@@ -202,9 +202,9 @@ data VisionDetect = VisionDetect { nbDetected :: Word32
                                  , vdHeight :: [Word32]
                                  , vdDist :: [Word32]
                                  , vdOrientationAngle :: [Float]
-                                 , rotation :: [Matrix Float]
-                                 , translation :: [Vector]
-                                 , cameraSource :: [Word32]
+                                 , vdRotation :: [Matrix Float]
+                                 , vdTranslation :: [Vector]
+                                 , vdCameraSource :: [Word32]
                                  } deriving (Show)
 
 data Watchdog = Watchdog { wd :: Word32 } deriving (Show)
@@ -353,4 +353,4 @@ data NavData = NavData { navDataHeader :: Maybe Header
                        } deriving (Show)
 
 emptyNavData :: NavData
-emptyNavData = NavData Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing 
+emptyNavData = NavData Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing

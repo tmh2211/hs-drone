@@ -56,10 +56,56 @@ getNavData nd = do
                 getNavData (nd { visionPerf = Just vperf })
     15    -> do tSend <- getTrackersSend
                 getNavData (nd { trackersSend = Just tSend })
+    16    -> do vd <- getVisionDetect
+                getNavData (nd { visionDetect = Just vd })
+    17    -> do wd <- getWatchdog
+                getNavData (nd { watchdog = Just wd })
+    18    -> do adc <- getAdcDataFrame
+                getNavData (nd { adcDataFrame = Just adc })
     65535 -> do cks <- getCheckSum
                 return (nd { checkSum = Just cks })
     _     -> do skip (fromIntegral size - 4)
                 getNavData nd
+
+get3x3Matrix :: Get (Matrix Float)
+get3x3Matrix = do
+  row1 <- replicateM 3 getFloatle
+  row2 <- replicateM 3 getFloatle
+  row3 <- replicateM 3 getFloatle
+  return $ fromLists [row1, row2, row3]
+
+getVector3x1 :: Get Vector
+getVector3x1 = do
+  x <- getFloatle
+  y <- getFloatle
+  z <- getFloatle
+  return $ Vector x y z
+
+getAdcDataFrame :: Get AdcDataFrame
+getAdcDataFrame = do
+  version <- getWord32le
+  frame <- replicateM 32 getWord8
+  return $ AdcDataFrame version frame
+
+getWatchdog :: Get Watchdog
+getWatchdog = do
+  wd <- getWord32le
+  return $ Watchdog wd
+
+getVisionDetect :: Get VisionDetect
+getVisionDetect = do
+  nbd <- getWord32le
+  t <- replicateM 4 getWord32le
+  xc <- replicateM 4 getWord32le
+  yc <- replicateM 4 getWord32le
+  width <- replicateM 4 getWord32le
+  height <- replicateM 4 getWord32le
+  dist <- replicateM 4 getWord32le
+  orientationAngle <- replicateM 4 getFloatle
+  rotation <- replicateM 4 get3x3Matrix
+  translation <- replicateM 4 getVector3x1
+  cameraSource <- replicateM 4 getWord32le
+  return $ VisionDetect nbd t xc yc width height dist orientationAngle rotation translation cameraSource
 
 getTrackersSend :: Get TrackersSend
 getTrackersSend = do
