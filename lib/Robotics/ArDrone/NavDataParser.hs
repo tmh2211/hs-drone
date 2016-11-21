@@ -62,10 +62,58 @@ getNavData nd = do
                 getNavData (nd { watchdog = Just wd })
     18    -> do adc <- getAdcDataFrame
                 getNavData (nd { adcDataFrame = Just adc })
+    19    -> do vidstr <- getVideoStream
+                getNavData (nd { videoStream = Just vidstr })
+    20    -> do g <- getGames
+                getNavData (nd { games = Just g })
+    21    -> do pr <- getPressureRaw
+                getNavData (nd { pressureRaw = Just pr })
+    22    -> do mag <- getMagneto
+                getNavData (nd { magneto = Just mag })
+    23    -> do ws <- getWindspeed
+                getNavData (nd { windspeed = Just ws })
+    24    -> do kp <- getKalmanPressure
+                getNavData (nd { kalmanPressure = Just kp })
+    25    -> do hd <- getHDVideoStream
+                getNavData (nd { hdVideoStream = Just hd })
+    26    -> do wifi_ <- getWifi
+                getNavData (nd { wifi = Just wifi_ })
+    27    -> do gps_ <- getGps
+                getNavData (nd { gps = Just gps_ })
     65535 -> do cks <- getCheckSum
                 return (nd { checkSum = Just cks })
     _     -> do skip (fromIntegral size - 4)
                 getNavData nd
+
+getTuple :: Get a -> Get (a, a)
+getTuple g = do
+  first <- g
+  second <- g
+  return (first, second)
+
+getTriple :: Get a -> Get (a, a, a)
+getTriple g = do
+  first <- g
+  second <- g
+  third <- g
+  return (first, second, third)
+
+getQuadrouple :: Get a -> Get (a, a, a, a)
+getQuadrouple g = do
+  first <- g
+  second <- g
+  third <- g
+  fourth <- g
+  return (first, second, third, fourth)
+
+getQuintuple :: Get a -> Get (a, a, a, a, a)
+getQuintuple g = do
+  first <- g
+  second <- g
+  third <- g
+  fourth <- g
+  fifth <- g
+  return (first, second, third, fourth, fifth)
 
 get3x3Matrix :: Get (Matrix Float)
 get3x3Matrix = do
@@ -80,6 +128,137 @@ getVector3x1 = do
   y <- getFloatle
   z <- getFloatle
   return $ Vector x y z
+
+getSatChannel :: Get SatChannel
+getSatChannel = do
+  sat <- getWord8
+  cn0 <- getWord8
+  return $ SatChannel sat cn0
+
+getGps :: Get Gps
+getGps = do
+  lat <- getDoublele
+  lon <- getDoublele
+  ele <- getDoublele
+  hdop <- getDoublele
+  dataAv <- getInt
+  zeroVal <- getInt
+  wptVal <- getInt
+  lat0_ <- getDoublele
+  lon0_ <- getDoublele
+  latFuse_ <- getDoublele
+  lonFuse_ <- getDoublele
+  state <- getWord32le
+  xtraj <- getFloatle
+  xref <- getFloatle
+  ytraj <- getFloatle
+  yref <- getFloatle
+  thetap <- getFloatle
+  phip <- getFloatle
+  thetai <- getFloatle
+  phii <- getFloatle
+  thetad <- getFloatle
+  phid <- getFloatle
+  vd <- getDoublele
+  pd <- getDoublele
+  gpsspeed <- getFloatle
+  lastframe <- getWord32le
+  gpsdegree <- getFloatle
+  degreeMag <- getFloatle
+  gpsephe <- getFloatle
+  gpsehve <- getFloatle
+  cn0 <- getFloatle
+  sats <- getWord32le
+  channels <- replicateM 12 getSatChannel
+  plugged <- getInt
+  epheStatus <- getWord32le
+  vxtraj <- getFloatle
+  vytraj <- getFloatle
+  firmStatus <- getWord32le
+  return $ Gps lat lon ele hdop dataAv zeroVal wptVal lat0_ lon0_ latFuse_ lonFuse_ state xtraj xref ytraj yref thetap phip thetai phii thetad phid vd pd gpsspeed lastframe gpsdegree degreeMag gpsephe gpsehve cn0 sats channels plugged epheStatus vxtraj vytraj firmStatus
+
+getWifi :: Get Wifi
+getWifi = do
+  quality <- getFloatle
+  return $ Wifi quality
+
+getHDVideoStream :: Get  HDVideoStream
+getHDVideoStream = do
+  hdState <- getWord32le
+  hdStorage <- getTuple getWord32le
+  usbkey <- getTuple getWord32le
+  frameN <- getWord32le
+  remainingTime <- getWord32le
+  return $ HDVideoStream hdState hdStorage usbkey frameN remainingTime
+
+getKalmanPressure :: Get KalmanPressure
+getKalmanPressure = do
+  offset <- getFloatle
+  kpalt <- getFloatle
+  kpvel <- getFloatle
+  kpangle <- getTuple getFloatle
+  kpus <- getTuple getFloatle
+  kpcov <- getTriple getFloatle
+  groundEffect <- getWord8
+  kpsum <- getFloatle
+  kpreject <- getWord8
+  umultisinus <- getFloatle
+  gazalt <- getFloatle
+  flagMultisinus <- getWord8
+  flagMultisinusStart <- getWord8
+  return $ KalmanPressure offset kpalt kpvel kpangle kpus kpcov groundEffect kpsum kpreject umultisinus gazalt flagMultisinus flagMultisinusStart
+
+getWindspeed :: Get Windspeed
+getWindspeed = do
+  speed <- getFloatle
+  angle <- getFloatle
+  compensation <- getTuple getFloatle
+  stateX <- replicateM 6 getFloatle
+  debug <- replicateM 3 getFloatle
+  return $ Windspeed speed angle compensation stateX debug
+
+getMagneto :: Get Magneto
+getMagneto = do
+  mx <- getInt16le
+  my <- getInt16le
+  mz <- getInt16le
+  raw <- getVector3x1
+  rectified <- getVector3x1
+  offset <- getVector3x1
+  heading <- getTriple getFloatle
+  ok <- getWord8
+  state <- getWord32le
+  radius <- getFloatle
+  err <- getTuple getFloatle
+  return $ Magneto mx my mz raw rectified offset heading ok state radius err
+
+getPressureRaw :: Get PressureRaw
+getPressureRaw = do
+  up <- getInt
+  ut <- getWord16le
+  temp <- getInt16le
+  press <- getInt
+  return $ PressureRaw up ut temp press
+
+getGames :: Get Games
+getGames = do
+  c <- getTuple getWord32le
+  return $ Games c
+
+getVideoStream :: Get VideoStream
+getVideoStream = do
+  quant <- getWord8
+  frame <- getTuple getWord32le
+  at1 <- getWord32le
+  at2 <- getWord32le
+  at3 <- getFloatle
+  at4 <- getWord32le
+  let atcmd = (at1, at2, at3, at4)
+  bitrate <- getTuple getWord32le
+  d <- replicateM 5 getInt
+  tcp <- getWord32le
+  fifo <- getWord32le
+  return $ VideoStream quant frame atcmd bitrate d tcp fifo
 
 getAdcDataFrame :: Get AdcDataFrame
 getAdcDataFrame = do
@@ -271,10 +450,8 @@ getEulerAngles = do
 
 getGyroOffsets :: Get GyroOffsets
 getGyroOffsets = do
-  x <- getFloatle
-  y <- getFloatle
-  z <- getFloatle
-  return (GyroOffsets (Vector x y z))
+  v <- getVector3x1
+  return (GyroOffsets v)
 
 getRawMeassures :: Get RawMeasures
 getRawMeassures = do

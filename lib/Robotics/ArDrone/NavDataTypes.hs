@@ -243,7 +243,7 @@ data Magneto = Magneto { magMx :: Int16
                        , error :: (Float, Float)
                        } deriving (Show)
 
-data WindSpeed = WindSpeed { wsSpeed :: Float
+data Windspeed = Windspeed { wsSpeed :: Float
                            , wsAngle :: Float
                            , wsCompensation :: (Float, Float)
                            , wsStateX :: [Float]
@@ -275,8 +275,8 @@ data HDVideoStream = HDVideoStream { hdState :: Word32
 data Wifi = Wifi { wifiLinkQuality :: Float } deriving (Show)
 
 data SatChannel = SatChannel { scSat :: Word8
-                               , scCn0 :: Word8
-                               } deriving (Show)
+                             , scCn0 :: Word8
+                             } deriving (Show)
 
 data Gps = Gps { latitude :: Double
                , longitude :: Double
@@ -313,7 +313,7 @@ data Gps = Gps { latitude :: Double
                , gpsChannels :: [SatChannel]
                , gpsPlugged :: Int
                , gpsEphemerisStatus :: Word32
-               , pgsVxTraj :: Float
+               , gpsVxTraj :: Float
                , gpsVyTraj :: Float
                , gpsFirmwareStatus :: Word32
                } deriving (Show)
@@ -344,7 +344,7 @@ data NavData = NavData { navDataHeader :: Maybe Header
                        , games :: Maybe Games
                        , pressureRaw :: Maybe PressureRaw
                        , magneto :: Maybe Magneto
-                       , windSpeed :: Maybe WindSpeed
+                       , windspeed :: Maybe Windspeed
                        , kalmanPressure :: Maybe KalmanPressure
                        , hdVideoStream :: Maybe HDVideoStream
                        , wifi :: Maybe Wifi
