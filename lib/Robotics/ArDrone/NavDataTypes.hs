@@ -33,6 +33,9 @@ instance Monoid Vector where
 vectorToMatrix :: Vector -> Matrix Float
 vectorToMatrix (Vector x y z) = fromLists [[x],[y],[z]]
 
+scaleVector :: Float -> Vector -> Vector
+scaleVector f (Vector x y z) = Vector (f*x) (f*y) (f*z)
+
 --Datatype holding the important data from the the demo_data struct
 data DemoData = DemoData { flyState :: Word32
                          , batteryPercentage :: Word32

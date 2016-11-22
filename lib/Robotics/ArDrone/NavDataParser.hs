@@ -289,10 +289,7 @@ getVisionDetect = do
 getTrackersSend :: Get TrackersSend
 getTrackersSend = do
   locked <- replicateM 30 getInt
-  point <- replicateM 30 $ do
-    x <- getFloatle
-    y <- getFloatle
-    return (x, y)
+  point <- replicateM 30 $ getTuple getFloatle
   return $ TrackersSend locked point
 
 getVisionPerf :: Get VisionPerf
@@ -308,18 +305,8 @@ getVisionPerf = do
 
 getVisionOf :: Get VisionOf
 getVisionOf = do
-  voDx1 <- getFloatle
-  voDx2 <- getFloatle
-  voDx3 <- getFloatle
-  voDx4 <- getFloatle
-  voDx5 <- getFloatle
-  let voDx = (voDx1, voDx2, voDx3, voDx4, voDx5)
-  voDy1 <- getFloatle
-  voDy2 <- getFloatle
-  voDy3 <- getFloatle
-  voDy4 <- getFloatle
-  voDy5 <- getFloatle
-  let voDy = (voDy1, voDy2, voDy3, voDy4, voDy5)
+  voDx <- getQuintuple getFloatle
+  voDy <- getQuintuple getFloatle
   return $ VisionOf voDx voDy
 
 getVisionRaw :: Get VisionRaw
@@ -337,14 +324,9 @@ getAltitude = do
   raw <- getInt
   obsAcc <- getFloatle
   obsAlt <- getFloatle
-  obsXx <- getFloatle
-  obsXy <- getFloatle
-  obsXz <- getFloatle
-  let obsX = Vector obsXx obsXy obsXz
+  obsX <- getVector3x1
   obsState <- getWord32le
-  estVb1 <- getFloatle
-  estVb2 <- getFloatle
-  let estVb = (estVb1, estVb2)
+  estVb <- getTuple getFloatle
   estState <- getWord32le
   return $ Altitude vision vel ref raw obsAcc obsAlt obsX obsState estVb estState
 
@@ -371,28 +353,28 @@ getPwm = do
   motorCurrents4 <- getWord16le
   altitudeProp <- getFloatle
   altitudeDer <- getFloatle
-  return (Pwm motors satMotors gazFeedForward gazAltitude altitudeIntegral vzRef upitch uroll uyaw yawUI uPitchPlanif uRollPlanif uYawPlanif uGazPlanif (motorCurrents1, motorCurrents2, motorCurrents3, motorCurrents4) altitudeProp altitudeDer)
+  return $ Pwm motors satMotors gazFeedForward gazAltitude altitudeIntegral vzRef upitch uroll uyaw yawUI uPitchPlanif uRollPlanif uYawPlanif uGazPlanif (motorCurrents1, motorCurrents2, motorCurrents3, motorCurrents4) altitudeProp altitudeDer
 
 getRcReferences :: Get RcReferences
 getRcReferences = do
-  pitch <- getInt32le
-  roll <- getInt32le
-  yaw <- getInt32le
-  gaz <- getInt32le
-  ag <- getInt32le
-  return (RcReferences (fromIntegral pitch) (fromIntegral roll) (fromIntegral yaw) (fromIntegral gaz) (fromIntegral ag))
+  pitch <- getInt
+  roll <- getInt
+  yaw <- getInt
+  gaz <- getInt
+  ag <- getInt
+  return $ RcReferences pitch roll yaw gaz ag
 
 getTrims :: Get Trims
 getTrims = do
   angularRate <- getFloatle
   theta <- getFloatle
   phi <- getFloatle
-  return (Trims angularRate theta phi)
+  return $ Trims angularRate theta phi
 
 getVision :: Get Vision
 getVision = do
   state <- getWord32le
-  misc <- getInt32le
+  misc <- getInt
   phiTrim <- getFloatle
   phiProp <- getFloatle
   thetaTrim <- getFloatle
@@ -402,67 +384,58 @@ getVision = do
   capPhi <- getFloatle
   capPsi <- getFloatle
   let euler = Eulers capPhi capTheta capPsi
-  capAlt <- getInt32le
+  capAlt <- getInt
   time <- getWord32le
-  bodyVX <- getFloatle
-  bodyVY <- getFloatle
-  bodyVZ <- getFloatle
-  deltaPhi <- getFloatle
-  deltaTheta <- getFloatle
-  deltaPsi <- getFloatle
+  bodyV <- getVector3x1
+  deltas <- getVector3x1
   goldDef <- getWord32le
   goldReset <- getWord32le
   goldX <- getFloatle
   goldY <- getFloatle
-  return (Vision state (fromIntegral misc) phiTrim phiProp thetaTrim thetaProp newRawPicture euler (fromIntegral capAlt) time (Vector bodyVX bodyVY bodyVZ) (Vector deltaPhi deltaTheta deltaPsi) goldDef goldReset goldX goldY)
+  return $ Vision state misc phiTrim phiProp thetaTrim thetaProp newRawPicture euler capAlt time bodyV deltas goldDef goldReset goldX goldY
 
 
 getReferences :: Get References
 getReferences = do
-  theta <- getInt32le
-  phi <- getInt32le
-  thetaI <- getInt32le
-  phiI <- getInt32le
-  pitch <- getInt32le
-  roll <- getInt32le
-  yaw <- getInt32le
-  psi <- getInt32le
+  theta <- getInt
+  phi <- getInt
+  thetaI <- getInt
+  phiI <- getInt
+  pitch <- getInt
+  roll <- getInt
+  yaw <- getInt
+  psi <- getInt
   vx <- getFloatle
   vy <- getFloatle
   thetaMod <- getFloatle
   phiMod <- getFloatle
   kVX <- getFloatle
   kVY <- getFloatle
-  kMode <- getInt32le
+  kMode <- getInt
   uiTime <- getFloatle
   uiTheta <- getFloatle
   uiPhi <- getFloatle
   uiPsi <- getFloatle
   uiPsiAccuracy <- getFloatle
-  uiSeq <- getInt32le
-  return (References (fromIntegral theta) (fromIntegral phi) (fromIntegral thetaI) (fromIntegral phiI) (fromIntegral pitch) (fromIntegral roll) (fromIntegral yaw) (fromIntegral psi) vx vy thetaMod phiMod kVX kVY (fromIntegral kMode) uiTime uiTheta uiPhi uiPsi uiPsiAccuracy (fromIntegral uiSeq))
+  uiSeq <- getInt
+  return $ References theta phi thetaI phiI pitch roll yaw psi vx vy thetaMod phiMod kVX kVY kMode uiTime uiTheta uiPhi uiPsi uiPsiAccuracy uiSeq
 
 getEulerAngles :: Get EulerAngles
 getEulerAngles = do
   theta <- getFloatle
   phi <- getFloatle
-  return (EulerAngles theta phi)
+  return $ EulerAngles theta phi
 
 getGyroOffsets :: Get GyroOffsets
 getGyroOffsets = do
   v <- getVector3x1
-  return (GyroOffsets v)
+  return $ GyroOffsets v
 
 getRawMeassures :: Get RawMeasures
 getRawMeassures = do
-  accX <- getWord16le
-  accY <- getWord16le
-  accZ <- getWord16le
-  gyrX <- getWord16le
-  gyrY <- getWord16le
-  gyrZ <- getWord16le
-  gyr110X <- getWord16le
-  gyr110Y <- getWord16le
+  acc <- getTriple getWord16le
+  gyr <- getTriple getWord16le
+  gyr110 <- getTuple getWord16le
   batteryMilliVolt <- getWord32le
   usEchoStart <- getWord16le
   usEchoEnd <- getWord16le
@@ -476,12 +449,12 @@ getRawMeassures = do
   echoSum <- getWord32le
   altTemp <- getWord32le
   gradient <- getWord16le
-  return (RawMeasures (accX, accY, accZ) (gyrX, gyrY, gyrZ) (gyr110X, gyr110Y) batteryMilliVolt usEchoStart usEchoEnd usEchoAssociation usEchoDistance usCurveTime usCurveValue usCurveRef echoFlagIni echoNum echoSum altTemp gradient)
+  return $ RawMeasures acc gyr gyr110 batteryMilliVolt usEchoStart usEchoEnd usEchoAssociation usEchoDistance usCurveTime usCurveValue usCurveRef echoFlagIni echoNum echoSum altTemp gradient
 
 getTime :: Get Time
 getTime = do
   time <- getWord32le
-  return (Time time)
+  return $ Time time
 
 getHeader :: Get Header
 getHeader = do
@@ -489,25 +462,15 @@ getHeader = do
   state <- getWord32le
   seqNr <- getWord32le
   vision <- getWord32le
-  return (Header header state seqNr vision)
+  return $ Header header state seqNr vision
 
 getPhysMeasures :: Get PhysMeasures
 getPhysMeasures = do
-  _ <- getInt32le   -- drop accelerometer temperature
-  _ <- getInt16le   -- drop gyroscope temperature
-  xa <- getFloatle
-  let xa_ = xa/1000*9.81
-  ya <- getFloatle
-  let ya_ = ya/1000*9.81
-  za <- getFloatle
-  let za_ = za/1000*9.81
-  xg <- getFloatle
-  yg <- getFloatle
-  zg <- getFloatle
-  _ <- getWord32le  -- drop alim3V3
-  _ <- getWord32le  -- drop vrefEpson
-  _ <- getWord32le  -- drop vrefIDG
-  return (PhysMeasures (Vector xa_ ya_ za_) (Vector xg yg zg))
+  skip 6
+  a <- getVector3x1
+  g <- getVector3x1
+  skip 12
+  return $ PhysMeasures (scaleVector (9.81/1000) a) g
 
 getDemoData :: Get DemoData
 getDemoData = do
@@ -517,42 +480,14 @@ getDemoData = do
   phi <- getFloatle
   psi <- getFloatle
   alt <- getWord32le
-  vx <- getFloatle
-  vy <- getFloatle
-  vz <- getFloatle
-  _ <- getWord32le -- drop the frame index of the package
-  _ <- getWord32le -- drop the camera rotation matrx 9 x Word32
-  _ <- getWord32le
-  _ <- getWord32le
-  _ <- getWord32le
-  _ <- getWord32le
-  _ <- getWord32le
-  _ <- getWord32le
-  _ <- getWord32le
-  _ <- getWord32le
-  _ <- getWord32le -- drop the camera translation vector 3 x Word32
-  _ <- getWord32le
-  _ <- getWord32le
-  _ <- getWord32le -- drop camera tagindex
-  _ <- getWord32le -- drop camera type
-  _ <- getWord32le -- drop drone camera rotation matrix 9 x Word32
-  _ <- getWord32le
-  _ <- getWord32le
-  _ <- getWord32le
-  _ <- getWord32le
-  _ <- getWord32le
-  _ <- getWord32le
-  _ <- getWord32le
-  _ <- getWord32le
-  _ <- getWord32le -- drop drone camera translation vector 3xWord32
-  _ <- getWord32le
-  _ <- getWord32le
-  return (DemoData flyState batteryPercentage theta phi psi alt (Vector vx vy vz))
+  v <- getVector3x1
+  skip 108
+  return $ DemoData flyState batteryPercentage theta phi psi alt v
 
 getCheckSum :: Get CheckSum
 getCheckSum = do
   value <- getWord32le
-  return (CheckSum value)
+  return $ CheckSum value
 
 getInt :: Get Int
 getInt = do
