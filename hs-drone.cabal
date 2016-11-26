@@ -25,6 +25,7 @@ library
                        Robotics.ArDrone.NavDataServer,
                        Robotics.ArDrone.NavDataTypes,
                        Robotics.ArDrone.VideoStreamServer,
+                       Robotics.ArDrone.Repl.ReplCommands,
                        Util.MatrixParser,
                        Control.Monad.Drone
   -- other-modules:
@@ -89,3 +90,12 @@ executable VideoStream
                        dunai >= 0.1,
                        matrix >= 0.3.5
   main-is:             VideoStream.hs
+
+executable Repl
+  HS-source-dirs:      examples
+  build-depends:       hs-drone,
+                       base >=4.7,
+                       mtl >= 2.2,
+                       dunai >= 0.1,
+                       matrix >= 0.3.5
+  main-is:             Repl.hs
