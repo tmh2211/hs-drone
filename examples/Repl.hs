@@ -1,9 +1,12 @@
 import Robotics.ArDrone.Repl.ReplCommands
+import Robotics.ArDrone.Repl.ReplServer (runServer)
+
+import Data.IORef
+import Control.Concurrent
 
 welcomeMsg = "Welcome to the interactive drone command center.\n\
              \Now you can control the ArDrone 2.0 from the command line.\n\
              \Currently you have the following commands available:\n\
-             \Initialize\t--connects to the drone\n\
              \TakeOff\t--drone will start flying\n\
              \Stop\t--stops the last command from being executed (drone will hover)\n\
              \Land\t--will land the drone on the ground\n\
@@ -21,17 +24,19 @@ welcomeMsg = "Welcome to the interactive drone command center.\n\
 main :: IO ()
 main = do
   putStrLn welcomeMsg
-  mainLoop
+  commandRef <- newIORef None
+  forkIO $ runServer commandRef
+  mainLoop commandRef
 
-mainLoop :: IO ()
-mainLoop = do
+mainLoop :: IORef ReplCommand -> IO ()
+mainLoop ref = do
   line <- getLine
   let cmd = readReplCommand line
   case cmd of
     Just Exit -> putStrLn "Bye."
     Just c -> do
-      putStrLn $ "That is a correct command " ++ show c
-      mainLoop
+      writeIORef ref c
+      mainLoop ref
     Nothing -> do
       putStrLn "Incorrect command. Drone state remains unchanged."
-      mainLoop
+      mainLoop ref

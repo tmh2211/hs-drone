@@ -2,7 +2,7 @@ module Robotics.ArDrone.Repl.ReplCommands where
 
 import Text.Read (readMaybe)
 
-data ReplCommand = Initialize
+data ReplCommand = None
                  | TakeOff
                  | Land
                  | Stop
