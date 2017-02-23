@@ -23,7 +23,9 @@ import Data.Word
 import Data.Bits
 import Data.IORef
 import Data.Matrix
+import Data.Ratio
 import Data.Time.Clock
+import Data.Time.Clock.POSIX
 import Control.Monad.Except
 
 import Robotics.ArDrone.Control hiding (runDrone)
@@ -44,7 +46,7 @@ ctrlPort=5556
 -- | Initialization byte for the navigational data port
 byte = BS.singleton ( 1 :: Word8)
 -- | Time before another command should be send to keep the connection alive in ms.
-waitTime = 20.0
+waitTime = 20
 
 -- | Data flag that determines if the video stream server will run.
 data DroneConfig = WithVideo | WithoutVideo deriving (Show)
@@ -59,7 +61,7 @@ data DroneExceptions
 -- | This data type encapsulates the mutable drone state that is kept through the drone monad.
 data DroneState = DroneState { seqNr :: Integer                         -- ^ Sequence number the next packet must have
                              , lastCommand :: AtCommand                 -- ^ The last command the user send
-                             , lastTimeStamp :: UTCTime                 -- ^ The time stamp of the last command sent
+                             , lastTimeStamp :: Integer                 -- ^ The time stamp of the last command sent
                              , ctrlSocket :: Socket                     -- ^ UDP socket that connects to control port
                              , calibrationMatrix :: Matrix Float        -- ^ Calibration data for acceleration vector in form of a 3x3 matrix
                              , currentPacket :: IORef (Maybe NavData)   -- ^ This IORef holds the last packet of navigational data received
@@ -170,7 +172,7 @@ cmd atcmd = do
   ctrlS <- gets ctrlSocket
   state <- get
   liftIO $ send ctrlS $ fromAtCommand atcmd $ fromIntegral n
-  time <- liftIO getCurrentTime
+  time <- liftIO timeInMillis
   put $ state { lastTimeStamp = time}
   put $ state { lastCommand = atcmd}
   inc
@@ -196,18 +198,24 @@ getNavData = do
 wait :: Float -> Drone ()
 wait t = do
   let ms = t * 1000
-  currentT <- liftIO getCurrentTime
+  currentT <- liftIO timeInMillis
   lastT <- gets lastTimeStamp
-  let diffT = 1000 * diffUTCTime currentT lastT
+  let diffT = currentT - lastT
   when (diffT >= waitTime) stayAlive
-  now <- liftIO getCurrentTime
-  let waitLeft = ms - realToFrac (diffUTCTime now currentT)
+  now <- liftIO timeInMillis
+  let waitLeft = ms - realToFrac(now - currentT)
   when (waitLeft > 0) $
     wait $ waitLeft * 1000
 
 -- | Helper function that resends the last command to keep the connection alive.
 stayAlive :: Drone ()
 stayAlive = cmd =<< gets lastCommand
+
+timeInMicros :: IO Integer
+timeInMicros = numerator . toRational . (* 1000000) <$> getPOSIXTime
+
+timeInMillis :: IO Integer
+timeInMillis = (`div` 1000) <$> timeInMicros
 
 -- | Function that executes the monadic drone actions.
 -- It takes the DroneConfig flag to decide if the videostream server is started.
@@ -245,7 +253,7 @@ runDrone dc d = do
     WithoutVideo -> return ()
 
   -- Set now as the last time a command was send
-  now <- getCurrentTime
+  now <- timeInMillis
 
   -- Run the ExceptT monad to expose the underlying StateT transformer.
   -- Evaluate The StateT transformer after that and discard the final drone state.
