@@ -5,7 +5,7 @@ import Control.Monad.Trans
 
 main :: IO ()
 main = do
-  runDrone $ do
+  runDrone WithoutVideo $ do
     initNavaData
     mainLoop
   return ()

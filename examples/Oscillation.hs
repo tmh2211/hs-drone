@@ -22,7 +22,7 @@ integralFrom a = arr (* dt) >>> mySumFrom a
 
 main :: IO ()
 main = do
-  runDrone $ do
+  runDrone WithoutVideo $ do
     disableEmergency
     ftrim
     initNavaData

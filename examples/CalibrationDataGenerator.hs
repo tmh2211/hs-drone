@@ -44,7 +44,7 @@ communicationProtocol (ref, (Worker orientation), s) = do
 
 droneCommunication :: IORef ActiveThread -> IO ()
 droneCommunication session = do
-  result <- runDrone $ do
+  result <- runDrone WithoutVideo $ do
     initNavaData
     configureNavDataOptions [PHYS_MEASURES]
     orientation <- waitForMainThread session

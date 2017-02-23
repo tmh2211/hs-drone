@@ -4,7 +4,7 @@ import Control.Monad.Trans
 
 main :: IO ()
 main = do
-  runDrone $ do
+  runDrone WithoutVideo $ do
     takeOff
     wait 5
     flyForward 0.1
