@@ -1,3 +1,16 @@
+{-|
+Module:       Robotics.ArDrone.NavDataParser
+Description:  Functionality to parse the bytes of the navigational data
+License:      GPL-2
+Maintainer:   thomasmhergenroeder@gmail.com
+
+This module offers the functionality to parse the byte string that is sent from
+the navdata port. It has a toplevel function that kicks off the parsing of a
+packet, a function that handles the options and one parsing function for each
+option. Additionaly there are some helper functions that make the code more
+readable.<br>
+Information mainly taken from https://github.com/felixge/node-ar-drone.
+-}
 module Robotics.ArDrone.NavDataParser
 ( parseNavData
 , runGet
@@ -13,16 +26,21 @@ import Control.Monad
 
 import Robotics.ArDrone.NavDataTypes
 
+-- | Top level function that kicks of the parsing process. First it parses the
+-- header and then the options.
 parseNavData :: Get NavData
 parseNavData = do
   header <- getHeader
   let empty = emptyNavData
   getNavData (empty { navDataHeader = Just header})
 
+-- | This function parses the navdata options that are present.
 getNavData :: NavData -> Get NavData
 getNavData nd = do
+  -- identify the option by the id
   id <- getWord16le
   size <- getWord16le
+  -- decide based on the id of the option which function to call
   case id of
     0     -> do dd <- getDemoData
                 getNavData (nd { demoData = Just dd })
@@ -85,12 +103,14 @@ getNavData nd = do
     _     -> do skip (fromIntegral size - 4)
                 getNavData nd
 
+-- | Helper function to parse a tuple
 getTuple :: Get a -> Get (a, a)
 getTuple g = do
   first <- g
   second <- g
   return (first, second)
 
+  -- | Helper function to parse a triple
 getTriple :: Get a -> Get (a, a, a)
 getTriple g = do
   first <- g
@@ -98,6 +118,7 @@ getTriple g = do
   third <- g
   return (first, second, third)
 
+  -- | Helper function to parse a quadrouple
 getQuadrouple :: Get a -> Get (a, a, a, a)
 getQuadrouple g = do
   first <- g
@@ -106,6 +127,7 @@ getQuadrouple g = do
   fourth <- g
   return (first, second, third, fourth)
 
+  -- | Helper function to parse a quintuple
 getQuintuple :: Get a -> Get (a, a, a, a, a)
 getQuintuple g = do
   first <- g
@@ -115,6 +137,7 @@ getQuintuple g = do
   fifth <- g
   return (first, second, third, fourth, fifth)
 
+  -- | Helper function to parse a 3x3 matrix
 get3x3Matrix :: Get (Matrix Float)
 get3x3Matrix = do
   row1 <- replicateM 3 getFloatle
@@ -122,6 +145,7 @@ get3x3Matrix = do
   row3 <- replicateM 3 getFloatle
   return $ fromLists [row1, row2, row3]
 
+  -- | Helper function to parse a vector
 getVector3x1 :: Get Vector
 getVector3x1 = do
   x <- getFloatle
@@ -129,12 +153,14 @@ getVector3x1 = do
   z <- getFloatle
   return $ Vector x y z
 
+-- | Helper function to parse the subtype of a SatChannel
 getSatChannel :: Get SatChannel
 getSatChannel = do
   sat <- getWord8
   cn0 <- getWord8
   return $ SatChannel sat cn0
 
+-- | Parsing the GPS data
 getGps :: Get Gps
 getGps = do
   lat <- getDoublele
@@ -177,11 +203,13 @@ getGps = do
   firmStatus <- getWord32le
   return $ Gps lat lon ele hdop dataAv zeroVal wptVal lat0_ lon0_ latFuse_ lonFuse_ state xtraj xref ytraj yref thetap phip thetai phii thetad phid vd pd gpsspeed lastframe gpsdegree degreeMag gpsephe gpsehve cn0 sats channels plugged epheStatus vxtraj vytraj firmStatus
 
+-- | Parsing the Wifi option.
 getWifi :: Get Wifi
 getWifi = do
   quality <- getFloatle
   return $ Wifi quality
 
+-- | Parsing the HDVideoStream option.
 getHDVideoStream :: Get  HDVideoStream
 getHDVideoStream = do
   hdState <- getWord32le
@@ -191,6 +219,7 @@ getHDVideoStream = do
   remainingTime <- getWord32le
   return $ HDVideoStream hdState hdStorage usbkey frameN remainingTime
 
+-- | Parsing the KalmanPressure option.
 getKalmanPressure :: Get KalmanPressure
 getKalmanPressure = do
   offset <- getFloatle
@@ -208,6 +237,7 @@ getKalmanPressure = do
   flagMultisinusStart <- getWord8
   return $ KalmanPressure offset kpalt kpvel kpangle kpus kpcov groundEffect kpsum kpreject umultisinus gazalt flagMultisinus flagMultisinusStart
 
+-- | Parsing the Windspeed option.
 getWindspeed :: Get Windspeed
 getWindspeed = do
   speed <- getFloatle
@@ -217,6 +247,7 @@ getWindspeed = do
   debug <- replicateM 3 getFloatle
   return $ Windspeed speed angle compensation stateX debug
 
+-- | Parsing the magnetometer data.
 getMagneto :: Get Magneto
 getMagneto = do
   mx <- getInt16le
@@ -232,6 +263,8 @@ getMagneto = do
   err <- getTuple getFloatle
   return $ Magneto mx my mz raw rectified offset heading ok state radius err
 
+
+-- | Parsing the raw data from pressure measurement.
 getPressureRaw :: Get PressureRaw
 getPressureRaw = do
   up <- getInt
@@ -240,11 +273,13 @@ getPressureRaw = do
   press <- getInt
   return $ PressureRaw up ut temp press
 
+-- | Parsing the Games option.
 getGames :: Get Games
 getGames = do
   c <- getTuple getWord32le
   return $ Games c
 
+-- | Parsing the VideoStream option.
 getVideoStream :: Get VideoStream
 getVideoStream = do
   quant <- getWord8
@@ -260,17 +295,20 @@ getVideoStream = do
   fifo <- getWord32le
   return $ VideoStream quant frame atcmd bitrate d tcp fifo
 
+-- | Parsing the ADCDataFrame option.
 getAdcDataFrame :: Get AdcDataFrame
 getAdcDataFrame = do
   version <- getWord32le
   frame <- replicateM 32 getWord8
   return $ AdcDataFrame version frame
 
+-- | Parsing the Watchdog option.
 getWatchdog :: Get Watchdog
 getWatchdog = do
   wd <- getWord32le
   return $ Watchdog wd
 
+-- | Parsing the VisionDetect option.
 getVisionDetect :: Get VisionDetect
 getVisionDetect = do
   nbd <- getWord32le
@@ -286,12 +324,14 @@ getVisionDetect = do
   cameraSource <- replicateM 4 getWord32le
   return $ VisionDetect nbd t xc yc width height dist orientationAngle rotation translation cameraSource
 
+-- | Parsing the TrackersSend option.
 getTrackersSend :: Get TrackersSend
 getTrackersSend = do
   locked <- replicateM 30 getInt
   point <- replicateM 30 $ getTuple getFloatle
   return $ TrackersSend locked point
 
+-- | Parsing the VisionPerf option.
 getVisionPerf :: Get VisionPerf
 getVisionPerf = do
   szo <- getFloatle
@@ -303,12 +343,14 @@ getVisionPerf = do
   skip 80
   return $ VisionPerf szo corners compute tracking trans update []
 
+-- | Parsing the VisionOf option.
 getVisionOf :: Get VisionOf
 getVisionOf = do
   voDx <- getQuintuple getFloatle
   voDy <- getQuintuple getFloatle
   return $ VisionOf voDx voDy
 
+-- | Parsing the VisionRaw option.
 getVisionRaw :: Get VisionRaw
 getVisionRaw = do
   tx <- getFloatle
@@ -316,6 +358,7 @@ getVisionRaw = do
   tz <- getFloatle
   return $ VisionRaw tx ty tz
 
+-- | Parsing the Altitude option.
 getAltitude :: Get Altitude
 getAltitude = do
   vision <- getInt
@@ -330,7 +373,8 @@ getAltitude = do
   estState <- getWord32le
   return $ Altitude vision vel ref raw obsAcc obsAlt obsX obsState estVb estState
 
---TODO: Not working find out why and fix it
+-- | Parsing the PWM option.<br>
+-- Do not use it: Still has som weird bug to be fixed in fute versions.
 getPwm :: Get Pwm
 getPwm = do
   motors <- getWord32le
@@ -355,6 +399,7 @@ getPwm = do
   altitudeDer <- getFloatle
   return $ Pwm motors satMotors gazFeedForward gazAltitude altitudeIntegral vzRef upitch uroll uyaw yawUI uPitchPlanif uRollPlanif uYawPlanif uGazPlanif (motorCurrents1, motorCurrents2, motorCurrents3, motorCurrents4) altitudeProp altitudeDer
 
+-- | Parsing the RcReferences option.
 getRcReferences :: Get RcReferences
 getRcReferences = do
   pitch <- getInt
@@ -364,6 +409,7 @@ getRcReferences = do
   ag <- getInt
   return $ RcReferences pitch roll yaw gaz ag
 
+-- | Parsing the Trims option.
 getTrims :: Get Trims
 getTrims = do
   angularRate <- getFloatle
@@ -371,6 +417,7 @@ getTrims = do
   phi <- getFloatle
   return $ Trims angularRate theta phi
 
+-- | Parsing the Vision option.
 getVision :: Get Vision
 getVision = do
   state <- getWord32le
@@ -394,7 +441,7 @@ getVision = do
   goldY <- getFloatle
   return $ Vision state misc phiTrim phiProp thetaTrim thetaProp newRawPicture euler capAlt time bodyV deltas goldDef goldReset goldX goldY
 
-
+-- | Parsing the References option.
 getReferences :: Get References
 getReferences = do
   theta <- getInt
@@ -420,17 +467,20 @@ getReferences = do
   uiSeq <- getInt
   return $ References theta phi thetaI phiI pitch roll yaw psi vx vy thetaMod phiMod kVX kVY kMode uiTime uiTheta uiPhi uiPsi uiPsiAccuracy uiSeq
 
+-- | Parsing the EulerAngles option.
 getEulerAngles :: Get EulerAngles
 getEulerAngles = do
   theta <- getFloatle
   phi <- getFloatle
   return $ EulerAngles theta phi
 
+-- | Parsing the Gyrooffsets option.
 getGyroOffsets :: Get GyroOffsets
 getGyroOffsets = do
   v <- getVector3x1
   return $ GyroOffsets v
 
+-- | Parsing the RawMeasures option.
 getRawMeassures :: Get RawMeasures
 getRawMeassures = do
   acc <- getTriple getWord16le
@@ -451,11 +501,13 @@ getRawMeassures = do
   gradient <- getWord16le
   return $ RawMeasures acc gyr gyr110 batteryMilliVolt usEchoStart usEchoEnd usEchoAssociation usEchoDistance usCurveTime usCurveValue usCurveRef echoFlagIni echoNum echoSum altTemp gradient
 
+-- | Parsing the drone time in milliseconds.
 getTime :: Get Time
 getTime = do
   time <- getWord32le
   return $ Time time
 
+-- | Parsing the header of the whole navdata packet.
 getHeader :: Get Header
 getHeader = do
   header <- getWord32le
@@ -464,6 +516,8 @@ getHeader = do
   vision <- getWord32le
   return $ Header header state seqNr vision
 
+-- | Parsing the PhysMeasures option and convert the accelerometer data to
+-- m/s^2.
 getPhysMeasures :: Get PhysMeasures
 getPhysMeasures = do
   skip 6
@@ -472,6 +526,7 @@ getPhysMeasures = do
   skip 12
   return $ PhysMeasures (scaleVector (9.81/1000) a) g
 
+-- | Parsing the demo data. Dropping deprecated data.
 getDemoData :: Get DemoData
 getDemoData = do
   flyState <- getWord32le
@@ -484,11 +539,13 @@ getDemoData = do
   skip 108
   return $ DemoData flyState batteryPercentage theta phi psi alt v
 
+-- | Parsing the checksum of the packet.
 getCheckSum :: Get CheckSum
 getCheckSum = do
   value <- getWord32le
   return $ CheckSum value
 
+-- | Helper function to read an Int.
 getInt :: Get Int
 getInt = do
   int <- getInt32le

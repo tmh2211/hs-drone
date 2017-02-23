@@ -1,5 +1,11 @@
 {-# LANGUAGE NamedFieldPuns #-}
+{-|
+Module:       Robotics.ArDrone.Control
+Description:  Conversion of High level DroneCommands to strings the drone will understand
 
+This module was taken from the original library that I forked from.
+https://github.com/osnr/hs-drone
+-}
 module Robotics.ArDrone.Control
 where
 
@@ -12,6 +18,8 @@ import Data.List
 import Data.Binary.IEEE754
 import Data.Int
 
+-- | High level type that describes the possible commands the user can send to
+-- the drone.
 data ArDroneMsg = TakeOff
                 | Land
 
@@ -38,6 +46,8 @@ data ArDroneMsg = TakeOff
                 | DisableEmergency
                 deriving (Show)
 
+-- | Intermediate representation of the messages that are defined in the drone's
+-- protocol
 data AtCommand = AtRef String
                | AtFTrim
                | AtPCmd { enable :: Bool
@@ -49,8 +59,10 @@ data AtCommand = AtRef String
                | AtCtrl Int Int
                deriving (Show)
 
+-- | Synonym for the sequencenumber of the commands
 type SequenceNumber = Int
 
+-- | Deprecated: Do not use
 connectDrone :: String -> IO Socket
 connectDrone ip = do
     addrInfos <- getAddrInfo Nothing (Just ip) (Just "5556")
@@ -61,6 +73,7 @@ connectDrone ip = do
 
     return sock
 
+-- | Deprecated: Do not use
 runDrone :: String -> [(Int, ArDroneMsg)] -> IO ()
 runDrone ip msgs = do
     sock <- connectDrone ip
@@ -78,6 +91,7 @@ runDrone ip msgs = do
         send sock $ fromAtCommand command num
         threadDelay 30000
 
+-- | Do not use this function
 main = withSocketsDo $ do
     runDrone "192.168.1.1" $
         [ (6000, TakeOff)
@@ -85,6 +99,8 @@ main = withSocketsDo $ do
         , (2000, Land)
         ]
 
+-- | This function converts a message like flying forward to the intermediate
+-- representation of the message types.
 toAtCommand :: ArDroneMsg -> AtCommand
 toAtCommand msg =
     case msg of
@@ -99,7 +115,7 @@ toAtCommand msg =
      CounterClockwise speed -> AtPCmd True 0 0 0 (-speed)
 
      Front speed -> AtPCmd True 0 (-speed) 0 0
-     Back speed -> AtPCmd True 0 speed 0 0 
+     Back speed -> AtPCmd True 0 speed 0 0
 
      MoveLeft speed -> AtPCmd True speed 0 0 0
      MoveRight speed -> AtPCmd True (-speed) 0 0 0
@@ -109,6 +125,8 @@ toAtCommand msg =
      FTrim -> AtFTrim
      DisableEmergency -> AtRef "290717952"
 
+-- | This converts the intermediate message representation and a given sequence
+-- number to a string the drone will understand.
 fromAtCommand :: AtCommand -> Int -> String
 fromAtCommand cmd num = (++ "\r") $
    case cmd of
@@ -125,6 +143,6 @@ fromAtCommand cmd num = (++ "\r") $
      AtCtrl a b -> "AT*CTRL=" ++ show num ++ ","++ show a ++","++show b
      AtConfig a b -> "AT*CONFIG="++ show num ++ ",\""++ a++ "\",\"" ++ b ++ "\""
 
-
+-- | Helper function to convert a float
 floatToInt :: Float -> Int32
 floatToInt = fromIntegral . floatToWord
