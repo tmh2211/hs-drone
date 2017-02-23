@@ -7,7 +7,7 @@ import Robotics.ArDrone.NavDataParser
 
 main :: IO ()
 main = do
-  result <- runDrone $ do
+  result <- runDrone WithoutVideo $ do
     initNavaData
     ftrim
     configureNavDataOptions [TRACKERS_SEND]

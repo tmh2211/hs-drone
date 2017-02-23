@@ -9,7 +9,7 @@ import Control.Monad.Trans
 
 runServer :: IORef ReplCommand -> IO ()
 runServer ref = do
-  result <- runDrone $ mainLoop ref
+  result <- runDrone WithoutVideo $ mainLoop ref
   return ()
 
 mainLoop :: IORef ReplCommand -> Drone ()
@@ -28,8 +28,8 @@ executeReplCommand Stop = stop
 executeReplCommand (Forward n) = flyForward n
 executeReplCommand (Backwards n) = flyBackwards n
 executeReplCommand (RC.Left n) = flyLeft n
-executeReplCommand (RC.Right n) = flyLeft n
-executeReplCommand (RC.Up n) = flyLeft n
-executeReplCommand (RC.Down n) = flyLeft n
-executeReplCommand (RC.Clockwise n) = flyLeft n
-executeReplCommand (RC.CounterClockwise n) = flyLeft n
+executeReplCommand (RC.Right n) = flyRight n
+executeReplCommand (RC.Up n) = flyUp n
+executeReplCommand (RC.Down n) = flyDown n
+executeReplCommand (RC.Clockwise n) = rotateClockwise n
+executeReplCommand (RC.CounterClockwise n) = rotateCounterClockwise n

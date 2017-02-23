@@ -40,7 +40,8 @@ library
                        matrix >= 0.3.5,
                        dunai >= 0.1,
                        system-command >= 0.0.10,
-                       JuicyPixels >= 3.2.7
+                       JuicyPixels >= 3.2.7,
+                       time >= 1.5
   -- hs-source-dirs:
   default-language:    Haskell2010
 
