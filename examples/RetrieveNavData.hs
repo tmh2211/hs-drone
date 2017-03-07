@@ -10,7 +10,7 @@ main = do
   result <- runDrone WithoutVideo $ do
     initNavaData
     ftrim
-    configureNavDataOptions [TRACKERS_SEND]
+    configureNavDataOptions [PHYS_MEASURES]
     mainLoop
   case result of
     Left e -> liftIO $ putStrLn $ show e

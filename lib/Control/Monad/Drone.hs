@@ -46,7 +46,7 @@ ctrlPort=5556
 -- | Initialization byte for the navigational data port
 byte = BS.singleton ( 1 :: Word8)
 -- | Time before another command should be send to keep the connection alive in ms.
-waitTime = 20
+waitTime = 20.0
 
 -- | Data flag that determines if the video stream server will run.
 data DroneConfig = WithVideo | WithoutVideo deriving (Show)
@@ -61,7 +61,7 @@ data DroneExceptions
 -- | This data type encapsulates the mutable drone state that is kept through the drone monad.
 data DroneState = DroneState { seqNr :: Integer                         -- ^ Sequence number the next packet must have
                              , lastCommand :: AtCommand                 -- ^ The last command the user send
-                             , lastTimeStamp :: Integer                 -- ^ The time stamp of the last command sent
+                             , lastTimeStamp :: Double                  -- ^ The time stamp of the last command sent
                              , ctrlSocket :: Socket                     -- ^ UDP socket that connects to control port
                              , calibrationMatrix :: Matrix Float        -- ^ Calibration data for acceleration vector in form of a 3x3 matrix
                              , currentPacket :: IORef (Maybe NavData)   -- ^ This IORef holds the last packet of navigational data received
@@ -192,10 +192,10 @@ getNavData = do
 
 -- | This function waits the given time in seconds.
 -- Furthermore it keeps the connection alive by resending the last command to
--- the dorne after a given time.
+-- the drone after a given time.
 -- This function should also be called after you sent a moving command to the
 -- drone, as the dorne only executes a command once.
-wait :: Float -> Drone ()
+wait :: Double -> Drone ()
 wait t = do
   let ms = t * 1000
   currentT <- liftIO timeInMillis
@@ -203,19 +203,20 @@ wait t = do
   let diffT = currentT - lastT
   when (diffT >= waitTime) stayAlive
   now <- liftIO timeInMillis
-  let waitLeft = ms - realToFrac(now - currentT)
+  let waitLeft = ms - (now - currentT)
   when (waitLeft > 0) $
-    wait $ waitLeft * 1000
+    wait $ waitLeft / 1000
 
 -- | Helper function that resends the last command to keep the connection alive.
 stayAlive :: Drone ()
 stayAlive = cmd =<< gets lastCommand
 
-timeInMicros :: IO Integer
-timeInMicros = numerator . toRational . (* 1000000) <$> getPOSIXTime
-
-timeInMillis :: IO Integer
-timeInMillis = (`div` 1000) <$> timeInMicros
+timeInMillis :: IO Double
+timeInMillis = do
+  t <- getPOSIXTime
+  let x = realToFrac t :: Double
+  let y = x * 1000000
+  return (y)
 
 -- | Function that executes the monadic drone actions.
 -- It takes the DroneConfig flag to decide if the videostream server is started.

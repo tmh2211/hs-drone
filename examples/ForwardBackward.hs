@@ -6,10 +6,10 @@ main :: IO ()
 main = do
   runDrone WithoutVideo $ do
     takeOff
-    wait 5
+    wait 1
     flyForward 0.1
-    wait 3
+    wait 1
     flyBackwards 0.1
-    wait 4
+    wait 1
     land
   return ()

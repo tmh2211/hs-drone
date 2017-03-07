@@ -25,7 +25,7 @@ runServer navSocket currentPacket = do
   let navData = runGetOrFail parseNavData $ fromStrict msg
   case navData of
     Left x -> do
-      putStrLn $ show x
+      --putStrLn $ show x
       writeIORef currentPacket Nothing
     Right (_, _, n) -> writeIORef currentPacket $ Just n
   runServer navSocket currentPacket

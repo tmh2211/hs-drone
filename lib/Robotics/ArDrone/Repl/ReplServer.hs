@@ -19,14 +19,17 @@ import Control.Monad.Trans
 -- | Starts the server
 runServer :: IORef ReplCommand -> IO ()
 runServer ref = do
-  result <- runDrone WithoutVideo $ mainLoop ref
+  print "Started server"
+  result <- runDrone WithoutVideo $ do
+    initNavaData
+    mainLoop ref
   return ()
 
 -- | This functions waits for new commands. If there a none it keeps the
 -- connection alive via the wait function.
 mainLoop :: IORef ReplCommand -> Drone ()
 mainLoop ref = do
-  wait 0.02
+  wait 1
   cmd <- liftIO $ readIORef ref
   executeReplCommand cmd
   mainLoop ref
